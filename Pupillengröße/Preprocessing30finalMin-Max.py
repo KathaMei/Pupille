@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -160,14 +161,14 @@ for i, df in enumerate(df_list_eye_id0):
 
 
 
-df_list_eye_id0[17].to_csv('/Users/Katharina/Desktop/Beispieldaten/example_dataframe.csv', index=False)
+#df_list_eye_id0[17].to_csv('/Users/Katharina/Desktop/Beispieldaten/example_dataframe.csv', index=False)
 
 
 #
 #
 #
 #
-#stop, rest of the code not adapted, look at the normalisation
+#look at the normalisation
 
 # Filter the data to include only rows with confidence >= 0.6
 sliced_data_0_confidence = sliced_data_0[sliced_data_0['confidence'] >= 0.6]
@@ -242,15 +243,6 @@ for i, df_sliced_0 in enumerate(df_list_eye_id0):
     plt.show()
     
 
-# Calculate the lower threshold value for 0.1% exclusion
-#diameter_threshold = sliced_data_0['diameter'].quantile(0.02)
-#print(f"The lower diameter threshold value to exclude 1% of the data is {diameter_threshold:.2f}.")
-
-# Create a simple dialog to ask the user for their thresholds
-diameter_threshold = simpledialog.askfloat("Diameter Threshold", "Please enter the diameter threshold:")
-diameter_3d_threshold = simpledialog.askfloat("Diameter 3D Threshold", "Please enter the diameter_3d threshold:")
-
-
 
 
 # Load the annotation timestamps
@@ -265,11 +257,10 @@ for i, df in enumerate(df_list_eye_id0):
 
     # Calculate masked first derivative of the dataframe
     df_preprocessed_eye_id0_i = PLR2d.mask_pupil_confidence([df_preprocessed_eye_id0_i], threshold=confidence_threshold_0)[0]
-    df_preprocessed_eye_id0_i = PLR2d.remove_threshold([df_preprocessed_eye_id0_i], lower_threshold=diameter_threshold, upper_threshold=200, mask_cols=['diameter'])[0]
     df_preprocessed_eye_id0_i = PLR2d.iqr_threshold([df_preprocessed_eye_id0_i], iqr_factor=4, mask_cols=['diameter'])[0]
-    df_preprocessed_eye_id0_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id0_i], threshold=1.5, mask_cols=['diameter'])[0]
     df_preprocessed_eye_id0_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id0_i])[0]
-    
+    df_preprocessed_eye_id0_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id0_i], threshold=3.0, mask_cols=["diameter"])[0]
+  
     # Find the index of the closest annotation to the current dataframe
     annotation_index = np.abs(annotation_timestamps - df_preprocessed_eye_id0_i.iloc[0]['pupil_timestamp']).argmin()
     
@@ -392,11 +383,10 @@ for i, df in enumerate(df_list_eye_id0_preprocessed_1):
     
     # Calculate masked first derivative of the dataframe
     df_preprocessed_eye_id0_1_i = PLR3d.mask_pupil_confidence_3d([df_preprocessed_eye_id0_1_i], threshold=confidence_threshold_1)[0]
-    df_preprocessed_eye_id0_1_i = PLR3d.remove_threshold_3d([df_preprocessed_eye_id0_1_i], lower_threshold=diameter_3d_threshold, upper_threshold=12, mask_cols=['diameter_3d'])[0]
     df_preprocessed_eye_id0_1_i = PLR3d.iqr_threshold_3d([df_preprocessed_eye_id0_1_i], iqr_factor=4, mask_cols=['diameter_3d'])[0]
-    df_preprocessed_eye_id0_1_i = PLR3d.mask_pupil_zscore_3d([df_preprocessed_eye_id0_1_i], threshold=3.0, mask_cols=["diameter_3d"])[0]
     df_preprocessed_eye_id0_1_i = PLR3d.mask_pupil_first_derivative_3d([df_preprocessed_eye_id0_1_i])[0]
-    
+    df_preprocessed_eye_id0_1_i = PLR3d.mask_pupil_zscore_3d([df_preprocessed_eye_id0_1_i], threshold=3.0, mask_cols=["diameter_3d"])[0]
+  
         
     # Find the index of the closest annotation to the current dataframe
     annotation_index = np.abs(annotation_timestamps - df_preprocessed_eye_id0_1_i.iloc[0]['pupil_timestamp']).argmin()
@@ -660,14 +650,6 @@ for i, df_sliced_1 in enumerate(df_list_eye_id1):
     
 
 
-# Calculate the lower threshold value for 0.1% exclusion
-#diameter_threshold_eye1 = sliced_data_1['diameter'].quantile(0.01)
-#print(f"The lower diameter threshold value to exclude 1% of the data is {diameter_threshold_eye1:.2f}.")
-
-diameter_threshold_eye1 = simpledialog.askfloat("Diameter Threshold", "Please enter the diameter threshold:")
-diameter_3d_threshold_eye1 = simpledialog.askfloat("Diameter 3D Threshold", "Please enter the diameter_3d threshold:")
-
-
 
 
 # Load the annotation timestamps
@@ -682,11 +664,10 @@ for i, df in enumerate(df_list_eye_id1):
 
     # Calculate masked first derivative of the dataframe
     df_preprocessed_eye_id1_i = PLR2d.mask_pupil_confidence([df_preprocessed_eye_id1_i], threshold=confidence_threshold_1)[0]
-    df_preprocessed_eye_id1_i = PLR2d.remove_threshold([df_preprocessed_eye_id1_i], lower_threshold=diameter_threshold_eye1, upper_threshold=200, mask_cols=['diameter'])[0]
     df_preprocessed_eye_id1_i = PLR2d.iqr_threshold([df_preprocessed_eye_id1_i], iqr_factor=4, mask_cols=['diameter'])[0]
-    df_preprocessed_eye_id1_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id1_i], threshold=3.0, mask_cols=["diameter"])[0]
     df_preprocessed_eye_id1_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id1_i])[0]
-    
+    df_preprocessed_eye_id0_1_i = PLR3d.mask_pupil_zscore([df_preprocessed_eye_id0_1_i], threshold=3.0, mask_cols=["diameter_3d"])[0]
+  
 
     # Find the index of the closest annotation to the current dataframe
     annotation_index = np.abs(annotation_timestamps - df_preprocessed_eye_id1_i.iloc[0]['pupil_timestamp']).argmin()
@@ -809,11 +790,10 @@ for i, df in enumerate(df_list_eye_id1_preprocessed_1):
     
     # Calculate masked first derivative of the dataframe
     df_preprocessed_eye_id1_1_i = PLR3d.mask_pupil_confidence_3d([df_preprocessed_eye_id1_1_i], threshold=confidence_threshold_1)[0]
-    df_preprocessed_eye_id1_1_i = PLR3d.remove_threshold_3d([df_preprocessed_eye_id1_1_i], lower_threshold=diameter_3d_threshold_eye1, upper_threshold=12, mask_cols=['diameter_3d'])[0]
     df_preprocessed_eye_id1_1_i = PLR3d.iqr_threshold_3d([df_preprocessed_eye_id1_1_i], iqr_factor=4, mask_cols=['diameter_3d'])[0]
-    df_preprocessed_eye_id1_1_i = PLR3d.mask_pupil_zscore_3d([df_preprocessed_eye_id1_1_i], threshold=3.0, mask_cols=["diameter_3d"])[0]
     df_preprocessed_eye_id1_1_i = PLR3d.mask_pupil_first_derivative_3d([df_preprocessed_eye_id1_1_i])[0]
-    
+    df_preprocessed_eye_id1_1_i = PLR3d.mask_pupil_zscore_3d([df_preprocessed_eye_id1_1_i], threshold=3.0, mask_cols=["diameter_3d"])[0]
+
         
     # Find the index of the closest annotation to the current dataframe
     annotation_index = np.abs(annotation_timestamps - df_preprocessed_eye_id1_1_i.iloc[0]['pupil_timestamp']).argmin()
@@ -1057,15 +1037,11 @@ with open(file_path, mode="a", newline="") as file:
     row_data = [
         f"{subject_id}_{stimulation_condition}",
         confidence_threshold_0,
-        diameter_threshold, 
-        diameter_3d_threshold, 
         removed_diameter_cols, 
         removed_diameter_cols_3d, 
         str(removed_diameter_cols_indices), 
         str(removed_diameter_3d_cols_indices), 
         confidence_threshold_1, 
-        diameter_threshold_eye1, 
-        diameter_3d_threshold_eye1, 
         removed_diameter_cols_eye1, 
         removed_diameter_cols_3d_eye1, 
         str(removed_diameter_cols_indices_eye1), 
@@ -1073,4 +1049,4 @@ with open(file_path, mode="a", newline="") as file:
         ",".join(removed_diameter_cols)
     ]
     writer.writerow(row_data)
-
+    
