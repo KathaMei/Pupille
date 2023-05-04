@@ -52,7 +52,7 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
         # Add a timeslot column
         df_sliced['rowid'] = range(len(df_sliced)) 
         df_sliced['timeslot'] = df_sliced['rowid'] // 1000
-        res.append(df_sliced)
+        res.append(df_sliced)        
     return res
 
 if __name__=="__main__": 
