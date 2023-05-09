@@ -55,6 +55,17 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
         res.append(df_sliced)        
     return res
 
+# blinkreconstruct for a pandas series. Returns a numpy array.
+# see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
+def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
+    display(type(df))
+    import datamatrix
+    import datamatrix.series
+    import datamatrix.operations
+    dm=datamatrix.convert.from_pandas(df).series
+    return datamatrix.series.blinkreconstruct(dm, vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode)
+
+
 if __name__=="__main__": 
     import pandas as pd
     subject_id="PJ02_1_Ruhe"
