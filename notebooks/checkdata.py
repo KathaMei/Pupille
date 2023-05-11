@@ -66,6 +66,15 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smo
     return datamatrix.series.blinkreconstruct(dm, vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode)
 
 
+
+
+
+        
+
+        
+     
+    
+
 if __name__=="__main__": 
     import pandas as pd
     subject_id="PJ02_1_Ruhe"
