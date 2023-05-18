@@ -41,7 +41,7 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
     res=[]
     for annotation_timestamp in annotation_timestamps:
         # Calculate the start and end timestamps for the window after the annotation
-        window_start = annotation_timestamp - 5.0
+        window_start = annotation_timestamp - 1.0
         window_end = window_start + config.window_duration
         
         # Select the rows that fall within the window

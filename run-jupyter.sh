@@ -1,5 +1,5 @@
 #!/bin/sh
-./run.sh jupyter-lab $@
+./run.sh jupyter-lab$@
 
 
 

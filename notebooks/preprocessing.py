@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from preprocessfunction2 import PLR2d
 from preprocessfunction3 import PLR3d
-import tkinter as tk
-from tkinter import simpledialog
 import csv
 import os.path
 import shutil
@@ -24,18 +22,18 @@ Created on Fri Apr 21 08:58:14 2023
 from dataclasses import dataclass
 @dataclass 
 class ProcessConfig: 
-    eyenum:int=0
-    column:str="unknown"
-    sfactor:float=1
-    data_path:str=""
-    subject_id:str="" # pfad
-    condition:str=""
-    timebase:str=""
-    start_time_offset:float=0
-    after_var_start_offset:float=0
-    window_duration:float=0
-    upper_threshold:float=0
-    diameter_threshold:float=0
+    eyenum:int=0 #eye0 right, eye1 left
+    column:str="unknown" #diameter or diameter_3d
+    sfactor:float=1 #the factor the velocity (vt) should be divided with to detect blinks in the blink_reconstruct
+    data_path:str="" #path the data is taken
+    subject_id:str="" #subject_id
+    condition:str="" #1,2,3 or 4: 30Stim, 30Placebo, 3.4Sham, 3.4Placebo
+    timebase:str="" #30s stimulation/placebo or 3.4s stimulation/placebo
+    start_time_offset:float=0 #stimulation duration: 3.4s or 30s
+    after_var_start_offset:float=0 #time after stimulation: 26.6s or 30s
+    window_duration:float=0  #the time of the whole dataset: start_time_offset + after_var_start_offset
+    upper_threshold:float=0 #upper diameter threshold, different for diameter (pixel) and diameter_3d (mm)
+    diameter_threshold:float=0 #lower diameter threshold, different for diameter (pixel) and diameter_3d (mm)
 
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
@@ -120,7 +118,7 @@ def process2(config:ProcessConfig,progress):
     # Loop through each annotation timestamp and slice the data
     for annotation_timestamp in annotation_timestamps:
         # Calculate the start and end timestamps for the window after the annotation
-        window_start = annotation_timestamp - 5.0
+        window_start = annotation_timestamp - 1.0
         window_end = window_start + window_duration
 
         # Select the rows that fall within the window
@@ -149,7 +147,7 @@ def process2(config:ProcessConfig,progress):
     progress('Loop through each annotation timestamp and create a list with the dataframes and a variable for each dataframe')
     for i, annotation_timestamp in enumerate(annotation_timestamps):
         # Calculate the start and end timestamps for the window after the annotation
-        window_start = annotation_timestamp - 5
+        window_start = annotation_timestamp - 1
         window_end = window_start + window_duration
 
         # Select the rows that fall within the window
@@ -187,10 +185,10 @@ def process2(config:ProcessConfig,progress):
         annotation_index = np.abs(annotation_timestamps - df_preprocessed_eye_id_i.iloc[0]['pupil_timestamp']).argmin()
 
         # Define the baseline, stimulation, and after_var time ranges based on the annotation
-        baseline_start = annotation_timestamps[annotation_index] - 5
+        baseline_start = annotation_timestamps[annotation_index] - 1
         baseline_end = annotation_timestamps[annotation_index]
         stim_start = annotation_timestamps[annotation_index]
-        stim_end = stim_start + config.start_time_offset
+        stim_end = stim_start + config.stime_start_offset
         after_var_start = stim_end
         after_var_end = after_var_start + config.after_var_start_offset
 
