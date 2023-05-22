@@ -91,7 +91,7 @@ class PLR2d:
         
     def mask_pupil_first_derivative(
         df_list: List[pd.DataFrame],
-        threshold: float = 3.0,
+        threshold: float = 2.0,
         mask_cols: List[str] = ["diameter"],
     ) -> List[pd.DataFrame]:
         """
@@ -240,37 +240,10 @@ class PLR2d:
         
         return preprocessed_dfs
     
+    import numpy as np
+    from scipy.fft import fft
+
     
-    def detect_large_oscillations(self, threshold: float) -> None:
-        """
-        Detects large oscillations in pupil size data using the power spectrum.
-
-        Parameters:
-            threshold (float): Threshold value for detecting large oscillations.
-
-        Returns:
-            None
-        """
-        fs = self.sample_rate
-
-        # Compute the power spectrum using FFT
-        spectrum = np.abs(fft(self.plr['pupil_size']))
-
-        # Calculate the frequency axis
-        freq_axis = np.fft.fftfreq(len(self.plr['pupil_size']), 1 / fs)
-
-        # Find the maximum amplitude in the power spectrum
-        max_amplitude = np.max(spectrum)
-
-        # Find the frequency associated with the maximum amplitude
-        max_amplitude_freq = freq_axis[np.argmax(spectrum)]
-
-        # Check if the maximum amplitude exceeds the threshold
-        large_oscillations_mask = max_amplitude > threshold
-
-        # Set the 'pupil_size' values to NaN where large oscillations are detected
-        self.plr.loc[large_oscillations_mask, 'pupil_size'] = np.nan
-        
     def detect_large_oscillations(df_list: List[pd.DataFrame], fs: float, threshold: float) -> List[pd.DataFrame]:
         """
         Detects large oscillations in pupil size data using the power spectrum.
@@ -289,13 +262,15 @@ class PLR2d:
             df_copy = df.copy(deep=True)
 
             # Apply detect_large_oscillations to the 'pupil_size' column of each dataframe
-            large_oscillations_mask = detect_large_oscillations(df_copy['diameter'], fs, threshold)
+            large_oscillations_mask = detect_large_oscillations(df_copy['pupil_size'], fs, threshold)
 
             # Set the 'pupil_size' values to NaN where large oscillations are detected
-            df_copy.loc[large_oscillations_mask, 'diameter'] = np.nan
+            df_copy.loc[large_oscillations_mask, 'pupil_size'] = np.nan
 
             preprocessed_dfs.append(df_copy)
 
         return preprocessed_dfs
+
+
 
     

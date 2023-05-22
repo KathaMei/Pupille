@@ -8,6 +8,8 @@ import csv
 import os.path
 import shutil
 from datetime import datetime
+from preprocessfunction2 import PLR2d
+from preprocessfunction3 import PLR3d
 
 
 #!/usr/bin/env python3
@@ -43,21 +45,55 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smo
     dm=datamatrix.convert.from_pandas(df).series
     return datamatrix.series.blinkreconstruct(dm, vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode)
 
-def reconstruct(config:ProcessConfig, eye, window_size=100):
+def reconstruct(config: ProcessConfig, eye, window_size=100):
     # Remove blinks.
+    plot_all = {
+    99: True  # Specify the index of the data frame you want to plot
+    }
+    col = config.column
+    interp_col = f'{col}_interp'
+    rec_col = f'{col}_rec'
+
+    eye[interp_col] = eye[col].interpolate(method='linear')
+    eye[rec_col] = blinkreconstruct(eye[interp_col],
+                                    vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
+                                    mode='advanced')
+
+    
+    # Apply the mask_pupil_first_derivative function to eye_rec column
+    eye[rec_col] = PLR2d.mask_pupil_first_derivative(eye, mask_cols=[rec_col])[0]
+
+    # blinkreconstruct replaces the blinks with NaN with mode='advanced',
+    # so we interpolate the gaps and low pass the result to obtain something.
+    # Detect and exclude datasets with artifacts
+    #interp_100(config, eye)
+
+
+#def reconstruct(config:ProcessConfig, eye, window_size=100):
+ #   # Remove blinks.
+   # plot_all = {
+  #  99: True  # Specify the index of the data frame you want to plot
+#}
+    #col=config.column
+    #eye[f'{col}_interp']=eye[col].interpolate(method='linear')
+    #eye[f'{col}_rec']=blinkreconstruct(eye[f'{col}_interp'], 
+                                                    #  vt_start=10/config.sfactor,vt_end=5/config.sfactor, maxdur=800, 
+                                                     # mode='advanced')
+    #eye[f'{col}_rec']= PLR2d.mask_pupil_first_derivative([eye], mask_cols=eye[f'{col}_rec'])[0]
+
+    # blinkreconstruct replaces the blinks with NaN with mode='advanced',
+    # so we interpolate the gaps and low pass the result to obtain something. 
+    # Detect and exclude datasets with artifacts
+
+def interp_100(config:ProcessConfig, eye, window_size=100):
     plot_all = {
     99: True  # Specify the index of the data frame you want to plot
 }
     col=config.column
-    eye[f'{col}_interp']=eye[col].interpolate(method='linear')
-    eye[f'{col}_rec']=blinkreconstruct(eye[f'{col}_interp'], 
-                                                      vt_start=10/config.sfactor,vt_end=5/config.sfactor, maxdur=800, 
-                                                      mode='advanced')
-    # blinkreconstruct replaces the blinks with NaN with mode='advanced',
-    # so we interpolate the gaps and low pass the result to obtain something. 
     eye[f'{col}_rec_interp']=eye[f'{col}_rec'].interpolate(method='linear')
     # Use moving average + recenter as low pass.
     eye[f'{col}_rec_interp_100']=eye[f'{col}_rec_interp'].rolling(window=window_size).mean().shift(-window_size//2)
+    
 
 def process(eyenum,column,subject_id,condition,timebase,data_path,progress):
     import preprocessingCopy1
@@ -171,12 +207,20 @@ def process2(config:ProcessConfig,progress):
 
         # Store the original unprocessed dataframe in a new variable
         df_preprocessed_eye_id_i = df.copy()
-        reconstruct(config,df_preprocessed_eye_id_i) # remove blinks, interpolate, smooth 
+        # Call the reconstruct function to remove blinks, interpolate, and smooth the data
+        reconstruct(config,df_preprocessed_eye_id_i) 
+        #df_preprocessed_eye_id_i = PLR2d.mask_pupil_confidence([df_preprocessed_eye_id_i], threshold=confidence_threshold)[0]
+        #df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
+        #df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=2.0, mask_cols=[config.column])[0]
+        
+        interp_100(config,df_preprocessed_eye_id_i)
+        
+         # remove blinks, interpolate, smooth 
         df_preprocessed_eye_id_i[f"{config.column}_original"]=df_preprocessed_eye_id_i[f"{config.column}"]
         df_preprocessed_eye_id_i[f"{config.column}"]=df_preprocessed_eye_id_i[f"{config.column}_rec_interp_100"]
                 
         # Calculate masked first derivative of the dataframe
-        df_preprocessed_eye_id_i = PLR2d.mask_pupil_confidence([df_preprocessed_eye_id_i], threshold=confidence_threshold)[0]
+        
       #  df_preprocessed_eye_id_i = PLR2d.remove_threshold([df_preprocessed_eye_id_i], lower_threshold=config.diameter_threshold, upper_threshold=config.upper_threshold, mask_cols=[config.column])[0]
       #  df_preprocessed_eye_id_i = PLR2d.iqr_threshold([df_preprocessed_eye_id_i], iqr_factor=4, mask_cols=[config.column])[0]
      #   df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=3.0, mask_cols=[config.column])[0]
@@ -203,6 +247,49 @@ def process2(config:ProcessConfig,progress):
 
         # Append the preprocessed dataframe to the list
         df_list_eye_id_preprocessed.append(df_preprocessed_eye_id_i)
+
+    counter = 0
+
+    # Loop through each dataframe in the list and plot the data for eye 0
+    for i, df in enumerate(df_list_eye_id):
+        # Extract the timestamp and diameter data from the dataframe
+        pupil_timestamp = df['pupil_timestamp']
+        diameter = df['diameter']
+
+        # Create a new figure with two subplots side by side
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+
+        # Plot the data before preprocessing in the left subplot
+        ax1.plot(pupil_timestamp, diameter, marker=".", linestyle="")
+        ax1.set_title(f"Eye Dataframe {i}")
+        ax1.set_xlabel("Pupil Timestamp")
+        ax1.set_ylabel("Diameter in mm/pixels")
+
+        # Extract the preprocessed dataframe from the preprocessed list
+        df_preprocessed_eye_id_i = df_list_eye_id_preprocessed[i]
+
+        # Extract the timestamp and diameter data from the preprocessed dataframe
+        pupil_timestamp_pre = df_preprocessed_eye_id_i['pupil_timestamp']
+        diameter_pre = df_preprocessed_eye_id_i['diameter']
+
+        # Plot the data after preprocessing in the right subplot
+        label1 = df_preprocessed_eye_id_i[df_preprocessed_eye_id_i['label']==1]
+        label2 = df_preprocessed_eye_id_i[df_preprocessed_eye_id_i['label']==2]
+        label3 = df_preprocessed_eye_id_i[df_preprocessed_eye_id_i['label']==3]
+
+        ax2.plot(label1['pupil_timestamp'], label1['diameter'], color='red', label='label 1')
+        ax2.plot(label2['pupil_timestamp'], label2['diameter'], color='blue', label='label 2')
+        ax2.plot(label3['pupil_timestamp'], label3['diameter'], color='green', label='label 3')
+
+
+        # Plot the data after preprocessing in the right subplot
+        ax2.set_title(f"Preprocessed Eye Dataframe {i}")
+        ax2.set_xlabel("Pupil Timestamp")
+        ax2.set_ylabel("Diameter in mm/pixels")
+
+        # Show the plot
+        counter += 1
+        plt.show()
 
 
     #remove dataframes wheen a lot of data is deleted
@@ -252,37 +339,50 @@ def process2(config:ProcessConfig,progress):
     #important: label 1 marks the baseline, which should be the 5 seconds before a stimulation start
     #here it gets the time_slot 0
     
-    progress('apply timeslots')
 
+
+   # progress('apply timeslots')
+    #for i in range(len(df_list_eye_id_preprocessed_filtered)):
+     #   df = df_list_eye_id_preprocessed_filtered[i]
+
+        # Assign time_slot 0 to the baseline data (label=1)
+      #  df.loc[df['label']==1, 'time_slot'] = 0
+
+        # Divide remaining data into 1000 time slots (label=2 or 3)
+       # df.loc[df['label'].isin([2,3]), 'time_slot'] = pd.cut(df.loc[df['label'].isin([2,3]), 'pupil_timestamp'], bins=1000, labels=False) + 1
+
+        #df_list_eye_id_preprocessed_filtered[i] = df
+        
+        
+        
     for i in range(len(df_list_eye_id_preprocessed_filtered)):
         df = df_list_eye_id_preprocessed_filtered[i]
 
         # Assign time_slot 0 to the baseline data (label=1)
         df.loc[df['label'] == 1, 'time_slot'] = 0
 
-        # Calculate the time range
-        min_time = df['pupil_timestamp'].min()
-        max_time = df['pupil_timestamp'].max()
-        time_range = max_time - min_time
-
         # Subset the DataFrame for label 2 or 3 data
         subset = df[df['label'].isin([2, 3])].copy()
 
-        # Check if the subset DataFrame is empty
-        if not subset.empty:
-            # Reset the index of the subset DataFrame
-            subset.reset_index(drop=True, inplace=True)
+        # Reset the index of the subset DataFrame
+        subset.reset_index(drop=True, inplace=True)
 
-            # Divide the subset data into 1000 time slots
-            subset['time_slot'] = pd.cut(subset['pupil_timestamp'], bins=1000, labels=False, right=False) + 1
+        # Calculate the time range for label 2 and 3 data
+        min_time = subset['pupil_timestamp'].min()
+        max_time = subset['pupil_timestamp'].max()
+        time_range = max_time - min_time
 
-            # Adjust the time_slot values to be centered around the middle time
-            subset['time_slot'] = subset['time_slot'] - 500 + (time_range / 2)
+        # Divide the subset data into 1000 time slots
+        subset['time_slot'], bins = pd.cut(subset['pupil_timestamp'], bins=1000, labels=False, retbins=True)
 
-            # Assign the adjusted time_slot values back to the original DataFrame
-            df.loc[df['label'].isin([2, 3]), 'time_slot'] = subset['time_slot']
+        # Adjust the time_slot values to start from 1
+        subset['time_slot'] = subset['time_slot'] + 1
+
+        # Assign the time_slot values back to the original DataFrame
+        df.loc[df['label'].isin([2, 3]), 'time_slot'] = subset['time_slot'].values
 
         df_list_eye_id_preprocessed_filtered[i] = df
+
 
 
 
