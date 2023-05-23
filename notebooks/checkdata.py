@@ -41,12 +41,13 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
     res=[]
     for annotation_timestamp in annotation_timestamps:
         # Calculate the start and end timestamps for the window after the annotation
-        window_start = annotation_timestamp - 1.0
+        window_start = annotation_timestamp - 5.0
         window_end = window_start + config.window_duration
         
         # Select the rows that fall within the window
         df_sliced = df[(df['pupil_timestamp'].between(window_start,window_end)) & (df['eye_id'] == eye_id)]
         df_sliced=df_sliced.copy()
+        df_sliced['pupil_timestamp_based'] = df_sliced['pupil_timestamp'] - window_start
         # Do more cleanup
 
         # Add a timeslot column
