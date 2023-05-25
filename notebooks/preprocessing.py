@@ -34,11 +34,31 @@ class ProcessConfig:
     window_duration:float=0  #the time of the whole dataset: start_time_offset + after_var_start_offset
     upper_threshold:float=0 #upper diameter threshold, different for diameter (pixel) and diameter_3d (mm)
     diameter_threshold:float=0 #lower diameter threshold, different for diameter (pixel) and diameter_3d (mm)
+    noise_threshold_factor:float=12 # Threshold factor for MAD noise rejection
+    noise_rejection_percent:float=5 # A measurent is rejected if it contains more than this percent of NaN after noise detection.
+    
+# Median Absolute Deviation of series data.
+def mad(col):
+    med=col.median()
+    return (col-med).abs().median()
+
+# Compute a new column with data exceeding the threshold replaced by NaN, return the percentage on NaN values in the new column.
+def compute_and_reject_noise(df,thresf,col,col_out):
+    import math
+    col_diff=df[col].diff()
+    mad_do=mad(col_diff)
+    threshold=col_diff.median()+thresf*mad_do
+    df[col_out]=df[col]
+    df.loc[col_diff.abs()>threshold,col_out]=math.nan
+    total=df[col_out].count()
+    count=df[col_out].isna().sum()
+    nan_percent=100*count/total
+    return nan_percent
+
 
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
 def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
-    display(type(df))
     import datamatrix
     import datamatrix.series
     import datamatrix.operations
@@ -60,31 +80,6 @@ def reconstruct(config: ProcessConfig, eye, window_size=100):
                                     mode='advanced')
 
     
-    # Apply the mask_pupil_first_derivative function to eye_rec column
-    # TODO: eye[rec_col] = PLR2d.mask_pupil_first_derivative(eye, mask_cols=[rec_col])[0]
-
-    # blinkreconstruct replaces the blinks with NaN with mode='advanced',
-    # so we interpolate the gaps and low pass the result to obtain something.
-    # Detect and exclude datasets with artifacts
-    #interp_100(config, eye)
-
-
-#def reconstruct(config:ProcessConfig, eye, window_size=100):
- #   # Remove blinks.
-   # plot_all = {
-  #  99: True  # Specify the index of the data frame you want to plot
-#}
-    #col=config.column
-    #eye[f'{col}_interp']=eye[col].interpolate(method='linear')
-    #eye[f'{col}_rec']=blinkreconstruct(eye[f'{col}_interp'], 
-                                                    #  vt_start=10/config.sfactor,vt_end=5/config.sfactor, maxdur=800, 
-                                                     # mode='advanced')
-    #eye[f'{col}_rec']= PLR2d.mask_pupil_first_derivative([eye], mask_cols=eye[f'{col}_rec'])[0]
-
-    # blinkreconstruct replaces the blinks with NaN with mode='advanced',
-    # so we interpolate the gaps and low pass the result to obtain something. 
-    # Detect and exclude datasets with artifacts
-
 def interp_100(config:ProcessConfig, eye, window_size=100):
     plot_all = {
     99: True  # Specify the index of the data frame you want to plot
@@ -100,7 +95,7 @@ def create_baseline_column(df, col, newcol):
     df[newcol]=df[col]-m
 
 
-def process(eyenum,column,subject_id,condition,timebase,data_path,progress):
+def create_process_config(eyenum,column,subject_id,condition,timebase,data_path):
     import preprocessing
     config=ProcessConfig()
     config.eyenum=eyenum
@@ -130,10 +125,9 @@ def process(eyenum,column,subject_id,condition,timebase,data_path,progress):
          config.diameter_threshold=1
     else: 
         raise ValueError("timebase")
-    return preprocessing.process2(config,progress)
+    return config
 
-    
-def process2(config:ProcessConfig,progress):
+def process(config:ProcessConfig,progress):
 
     progress("Starting process2")
     subject_id = config.subject_id    
@@ -153,9 +147,9 @@ def process2(config:ProcessConfig,progress):
     # Define the columns to include in the CSV file
     csv_cols = ['pupil_timestamp', 'diameter_3d', 'diameter','eye_id','confidence']
 
+    # ------------------------------------------------------------------------------------------------
     # Create an empty DataFrame to hold the sliced data
-    sliced_data = pd.DataFrame(columns=csv_cols)
-
+    df_list_eye_id = []
     progress('Loop through each annotation timestamp and slice the data')
     # Loop through each annotation timestamp and slice the data
     for annotation_timestamp in annotation_timestamps:
@@ -164,52 +158,44 @@ def process2(config:ProcessConfig,progress):
         window_end = window_start + window_duration
 
         # Select the rows that fall within the window
-        df_sliced = df[(df['pupil_timestamp'] >= window_start) & (df['pupil_timestamp'] <= window_end)]
-
-        # Add the sliced data to the DataFrame
-        sliced_data = pd.concat([sliced_data, df_sliced[csv_cols]])
-
-    # Save the sliced data to a CSV file separate for each eye
-    sliced_data = sliced_data[sliced_data['eye_id'] == config.eyenum]
-
-    # Filter the data to include only rows with confidence >= 0.6
-    sliced_data_confidence = sliced_data[sliced_data['confidence'] >= 0.6]
-
-    # Calculate the 0.02 quantile on the filtered data
-    confidence_threshold = sliced_data_confidence['confidence'].quantile(0.02)
-
-
-    # Print the result
-    progress(f"The 0.02 quantile of pupil size for confidence >= 0.6 is {confidence_threshold:.2f}.")
-
-
-    # Create an empty list to store the sliced dataframes and baselines
-    df_list_eye_id = []
-
-    progress('Loop through each annotation timestamp and create a list with the dataframes and a variable for each dataframe')
-    for i, annotation_timestamp in enumerate(annotation_timestamps):
-        # Calculate the start and end timestamps for the window after the annotation
-        window_start = annotation_timestamp - 1
-        window_end = window_start + window_duration
-
-        # Select the rows that fall within the window
-        df_sliced = sliced_data_confidence[(sliced_data_confidence['pupil_timestamp'] >= window_start) & (sliced_data_confidence['pupil_timestamp'] <= window_end)]
+        df_sliced = df[
+            (df['pupil_timestamp'] >= window_start) 
+            & (df['pupil_timestamp'] <= window_end) 
+            & (df['eye_id'] == config.eyenum) 
+            & (df['confidence']>=0.6)]            
         df_sliced=df_sliced.copy()
-        based_timestamps=df_sliced['pupil_timestamp']-window_start
+        based_timestamps=df_sliced['pupil_timestamp']-(window_start+1)
+        # pupil_timestamp_based -1..0 = baseline, 0=stimulation
         df_sliced['pupil_timestamp_based']=based_timestamps
-        # Append the sliced dataframe to the list
-        df_list_eye_id.append(df_sliced)
+        
 
-    #this does not work for all subjects as the data quality is very different:
-    # Calculate the lower threshold value for 0.1% exclusion
-    #diameter_threshold = sliced_data_0['diameter'].quantile(0.02)
-    #print(f"The lower diameter threshold value to exclude 1% of the data is {diameter_threshold:.2f}.")
+        nan_percent=compute_and_reject_noise(df_sliced,config.noise_threshold_factor,f"{config.column}",f"{config.column}_gated")
+        if (nan_percent > config.noise_rejection_percent): 
+            progress(f"measurement @{annotation_timestamp} has {nan_percent}% noise data. Rejecting")
+        else:
+            df_list_eye_id.append(df_sliced)
+    # ------------------------------------------------------------------------------------------------
+    progress("Label the data")
+    for df in df_list_eye_id:
+        # df[0..1] = label 1
+        # df[1..config.stime_start_offset] = Label 2
+        # df[rest]=Label 3 
+#         config.stime_start_offset=3.4
+#         config.after_var_start_offset=25
 
-    #preprocess the data and label
-    # Load the annotation timestamps
-
+        df['label']=0
+        df.loc[(df['pupil_timestamp_based'] < 0), 'label'] = 1
+        df.loc[
+            (df['pupil_timestamp_based'] >= 0) 
+            & (df['pupil_timestamp_based']<config.stime_start_offset), 
+            'label'] = 2
+        df.loc[
+            (df['pupil_timestamp_based'] >= config.stime_start_offset) 
+            & (df['pupil_timestamp_based']<config.stime_start_offset+config.after_var_start_offset), 
+            'label'] = 3        
+        
+    # ------------------------------------------------------------------------------------------------
     progress('preprocess and slice data')
-    annotation_timestamps = np.load(f"{measurement_path}/annotation_timestamps.npy")
     df_list_eye_id_preprocessed = []
     for i, df in enumerate(df_list_eye_id):
 
@@ -221,9 +207,8 @@ def process2(config:ProcessConfig,progress):
         #df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
         #df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=2.0, mask_cols=[config.column])[0]
         
-        interp_100(config,df_preprocessed_eye_id_i)
-        
          # remove blinks, interpolate, smooth 
+        interp_100(config,df_preprocessed_eye_id_i)        
         df_preprocessed_eye_id_i[f"{config.column}_original"]=df_preprocessed_eye_id_i[f"{config.column}"]
         df_preprocessed_eye_id_i[f"{config.column}"]=df_preprocessed_eye_id_i[f"{config.column}_rec_interp_100"]
                 
@@ -234,95 +219,16 @@ def process2(config:ProcessConfig,progress):
      #   df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=3.0, mask_cols=[config.column])[0]
       #  df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
 
-        # Find the index of the closest annotation to the current dataframe
-        annotation_index = np.abs(annotation_timestamps - df_preprocessed_eye_id_i.iloc[0]['pupil_timestamp']).argmin()
-
-        # Define the baseline, stimulation, and after_var time ranges based on the annotation
-        baseline_start = annotation_timestamps[annotation_index] - 1
-        baseline_end = annotation_timestamps[annotation_index]
-        stim_start = annotation_timestamps[annotation_index]
-        stim_end = stim_start + config.stime_start_offset
-        after_var_start = stim_end
-        after_var_end = after_var_start + config.after_var_start_offset
-
-        # Add a new column to the dataframe with the appropriate label based on the time ranges
-        df_preprocessed_eye_id_i.loc[(df_preprocessed_eye_id_i['pupil_timestamp'] >= baseline_start) & (df_preprocessed_eye_id_i['pupil_timestamp'] <= baseline_end), 'label'] = 1
-        df_preprocessed_eye_id_i.loc[(df_preprocessed_eye_id_i['pupil_timestamp'] >= stim_start) & (df_preprocessed_eye_id_i['pupil_timestamp'] <= stim_end), 'label'] = 2
-        df_preprocessed_eye_id_i.loc[(df_preprocessed_eye_id_i['pupil_timestamp'] >= after_var_start) & (df_preprocessed_eye_id_i['pupil_timestamp'] <= after_var_end), 'label'] = 3
-
         # Add a new column to the dataframe containing its own index number
         df_preprocessed_eye_id_i['index'] = i
-        # Append the preprocessed dataframe to the list
-        
+        # Create a baseline column for config.column.
         create_baseline_column(df_preprocessed_eye_id_i, config.column, f'{config.column}_baseline')
-            
+        # Append the preprocessed dataframe to the list                    
         df_list_eye_id_preprocessed.append(df_preprocessed_eye_id_i)
 
-
-
-    #remove dataframes wheen a lot of data is deleted
-   # if False: 
-    #    progress('remove dataframes wheen a lot of data is deleted')
-     #   removed_diameter_cols = []
-      #  df_list_eye_id_preprocessed_1 = []
-#
- #       for i, df in enumerate(df_list_eye_id_preprocessed):
-  #          count_preprocessed_diameter = df[config.column].count()
-   #         count_diameter = df_list_eye_id[i][config.column].count()
-#
- #           diameter_diff = count_diameter - count_preprocessed_diameter
-  #          diameter_pct_diff = count_preprocessed_diameter / count_diameter * 100
-#
- #           if diameter_pct_diff < 50:
-  #              df_copy = df.copy() # make a copy of the dataframe
-   #             df_copy[config.column] = np.nan # replace diameter column with NaNs
-    #            df_list_eye_id_preprocessed_1.append(df_copy) # append the preprocessed dataframe to the new list
-     #           removed_diameter_cols.append(i)
-      #      else:
-       #         df_list_eye_id_preprocessed_1.append(df) # append the original dataframe to the new list
-#
- #           progress(f"Removed 'diameter' column from DataFrame {i}")
-  #          progress(f"\nDataFrame {i}:")
-   #         progress(f"Difference in number of non-NaN values for diameter: {diameter_diff}")
-    #        progress(f"Percentage difference in number of non-NaN values for diameter: {diameter_pct_diff:.2f}%")
-
-        # Print summary message for removed 'diameter' columns
-     #   if removed_diameter_cols:
-      #      progress(f"\nThe 'diameter' column has been removed from the following DataFrames: {removed_diameter_cols}")
-       # else:
-        #    progress("\nNo 'diameter' columns were removed.")
-
-
-
-    #When I look at the plots, I maybe want to exclude more dataframes, here I am asked.
-    # Create a new list to store the filtered data frames
-
-    removed_diameter_cols_indices = []
-
-    removed_diameter_3d_cols_indices= []
-
-    df_list_eye_id_preprocessed_filtered = df_list_eye_id_preprocessed.copy()
-
-    #apply time_slots according to the pupil_timestamps. Each time_slot should have the same range of pupil_timestamps
-    #important: label 1 marks the baseline, which should be the 5 seconds before a stimulation start
-    #here it gets the time_slot 0
-    
-
-
-   # progress('apply timeslots')
-    #for i in range(len(df_list_eye_id_preprocessed_filtered)):
-     #   df = df_list_eye_id_preprocessed_filtered[i]
-
-        # Assign time_slot 0 to the baseline data (label=1)
-      #  df.loc[df['label']==1, 'time_slot'] = 0
-
-        # Divide remaining data into 1000 time slots (label=2 or 3)
-       # df.loc[df['label'].isin([2,3]), 'time_slot'] = pd.cut(df.loc[df['label'].isin([2,3]), 'pupil_timestamp'], bins=1000, labels=False) + 1
-
-        #df_list_eye_id_preprocessed_filtered[i] = df
         
-        
-        
+    # ------------------------------------------------------------------------------------------------
+    df_list_eye_id_preprocessed_filtered = df_list_eye_id_preprocessed.copy()        
     for i in range(len(df_list_eye_id_preprocessed_filtered)):
         df = df_list_eye_id_preprocessed_filtered[i]
 
