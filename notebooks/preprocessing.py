@@ -36,12 +36,19 @@ class ProcessConfig:
     diameter_threshold:float=0 #lower diameter threshold, different for diameter (pixel) and diameter_3d (mm)
     noise_threshold_factor:float=12 # Threshold factor for MAD noise rejection
     noise_rejection_percent:float=5 # A measurent is rejected if it contains more than this percent of NaN after noise detection.
+    validate_only:bool=False # just validate the data
     
 # Median Absolute Deviation of series data.
 def mad(col):
     med=col.median()
     return (col-med).abs().median()
 
+def nan_pct(series):
+    total=series.count()
+    count=series.isna().sum()
+    r=100*count/total
+    return r
+    
 # Compute a new column with data exceeding the threshold replaced by NaN, return the percentage on NaN values in the new column.
 def compute_and_reject_noise(df,thresf,col,col_out):
     import math
@@ -50,10 +57,11 @@ def compute_and_reject_noise(df,thresf,col,col_out):
     threshold=col_diff.median()+thresf*mad_do
     df[col_out]=df[col]
     df.loc[col_diff.abs()>threshold,col_out]=math.nan
-    total=df[col_out].count()
-    count=df[col_out].isna().sum()
-    nan_percent=100*count/total
-    return nan_percent
+    return nan_pct(df[col_out])
+    #total=df[col_out].count()
+    #count=df[col_out].isna().sum()
+    #nan_percent=100*count/total
+    #return nan_percent
 
 
 # blinkreconstruct for a pandas series. Returns a numpy array.
@@ -74,8 +82,8 @@ def reconstruct(config: ProcessConfig, eye, window_size=100):
     interp_col = f'{col}_interp'
     rec_col = f'{col}_rec'
 
-    eye[interp_col] = eye[col].interpolate(method='linear')
-    eye[rec_col] = blinkreconstruct(eye[interp_col],
+    # eye[interp_col] = eye[col].interpolate(method='linear')
+    eye[rec_col] = blinkreconstruct(eye[col],
                                     vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
                                     mode='advanced')
 
@@ -128,7 +136,6 @@ def create_process_config(eyenum,column,subject_id,condition,timebase,data_path)
     return config
 
 def process(config:ProcessConfig,progress):
-
     progress("Starting process2")
     subject_id = config.subject_id    
     stimulation_condition = config.condition
@@ -150,6 +157,7 @@ def process(config:ProcessConfig,progress):
     # ------------------------------------------------------------------------------------------------
     # Create an empty DataFrame to hold the sliced data
     df_list_eye_id = []
+    good_bad=[]
     progress('Loop through each annotation timestamp and slice the data')
     # Loop through each annotation timestamp and slice the data
     for annotation_timestamp in annotation_timestamps:
@@ -168,12 +176,20 @@ def process(config:ProcessConfig,progress):
         # pupil_timestamp_based -1..0 = baseline, 0=stimulation
         df_sliced['pupil_timestamp_based']=based_timestamps
         
-
         nan_percent=compute_and_reject_noise(df_sliced,config.noise_threshold_factor,f"{config.column}",f"{config.column}_gated")
         if (nan_percent > config.noise_rejection_percent): 
             progress(f"measurement @{annotation_timestamp} has {nan_percent}% noise data. Rejecting")
+            good_bad.append((subject_id,annotation_timestamp,nan_percent,False))
         else:
             df_list_eye_id.append(df_sliced)
+            good_bad.append((subject_id,annotation_timestamp,nan_percent,True))
+    
+    if config.validate_only:
+        return good_bad
+    
+    if not df_list_eye_id:
+        return []
+        
     # ------------------------------------------------------------------------------------------------
     progress("Label the data")
     for df in df_list_eye_id:
@@ -203,28 +219,36 @@ def process(config:ProcessConfig,progress):
         df_preprocessed_eye_id_i = df.copy()
         # Call the reconstruct function to remove blinks, interpolate, and smooth the data
         reconstruct(config,df_preprocessed_eye_id_i) 
-        #df_preprocessed_eye_id_i = PLR2d.mask_pupil_confidence([df_preprocessed_eye_id_i], threshold=confidence_threshold)[0]
-        #df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
-        #df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=2.0, mask_cols=[config.column])[0]
-        
-         # remove blinks, interpolate, smooth 
-        interp_100(config,df_preprocessed_eye_id_i)        
-        df_preprocessed_eye_id_i[f"{config.column}_original"]=df_preprocessed_eye_id_i[f"{config.column}"]
-        df_preprocessed_eye_id_i[f"{config.column}"]=df_preprocessed_eye_id_i[f"{config.column}_rec_interp_100"]
-                
-        # Calculate masked first derivative of the dataframe
-        
-      #  df_preprocessed_eye_id_i = PLR2d.remove_threshold([df_preprocessed_eye_id_i], lower_threshold=config.diameter_threshold, upper_threshold=config.upper_threshold, mask_cols=[config.column])[0]
-      #  df_preprocessed_eye_id_i = PLR2d.iqr_threshold([df_preprocessed_eye_id_i], iqr_factor=4, mask_cols=[config.column])[0]
-     #   df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=3.0, mask_cols=[config.column])[0]
-      #  df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
 
-        # Add a new column to the dataframe containing its own index number
-        df_preprocessed_eye_id_i['index'] = i
-        # Create a baseline column for config.column.
-        create_baseline_column(df_preprocessed_eye_id_i, config.column, f'{config.column}_baseline')
-        # Append the preprocessed dataframe to the list                    
-        df_list_eye_id_preprocessed.append(df_preprocessed_eye_id_i)
+        nanp_before=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_gated"])
+        nanp_after=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_rec"])
+        progress(f"nanp before={nanp_before}, nanp after={nanp_after}")
+        
+        if nanp_after>10:
+            progress(f"measurement @{annotation_timestamp} has {nan_percent}% noise data after blinkreconstruct. Rejecting")            
+        else:
+            #df_preprocessed_eye_id_i = PLR2d.mask_pupil_confidence([df_preprocessed_eye_id_i], threshold=confidence_threshold)[0]
+            #df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
+            #df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=2.0, mask_cols=[config.column])[0]
+
+             # remove blinks, interpolate, smooth 
+            interp_100(config,df_preprocessed_eye_id_i)        
+            df_preprocessed_eye_id_i[f"{config.column}_original"]=df_preprocessed_eye_id_i[f"{config.column}"]
+            df_preprocessed_eye_id_i[f"{config.column}"]=df_preprocessed_eye_id_i[f"{config.column}_rec_interp_100"]
+
+            # Calculate masked first derivative of the dataframe
+
+          #  df_preprocessed_eye_id_i = PLR2d.remove_threshold([df_preprocessed_eye_id_i], lower_threshold=config.diameter_threshold, upper_threshold=config.upper_threshold, mask_cols=[config.column])[0]
+          #  df_preprocessed_eye_id_i = PLR2d.iqr_threshold([df_preprocessed_eye_id_i], iqr_factor=4, mask_cols=[config.column])[0]
+         #   df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=3.0, mask_cols=[config.column])[0]
+          #  df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
+
+            # Add a new column to the dataframe containing its own index number
+            df_preprocessed_eye_id_i['index'] = i
+            # Create a baseline column for config.column.
+            create_baseline_column(df_preprocessed_eye_id_i, config.column, f'{config.column}_baseline')
+            # Append the preprocessed dataframe to the list                    
+            df_list_eye_id_preprocessed.append(df_preprocessed_eye_id_i)
 
         
     # ------------------------------------------------------------------------------------------------

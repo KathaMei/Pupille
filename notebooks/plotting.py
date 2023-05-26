@@ -22,14 +22,18 @@ def plot_preprocessed(df,title,ts_name,col_name):
     pupil_timestamp_pre = df[ts_name]
     diameter_pre = df[col_name]
 
-    # Plot the data after preprocessing in the right subplot
-    label1 = df[df['label']==1]
-    label2 = df[df['label']==2]
-    label3 = df[df['label']==3]
+    if 'label' in df.columns: 
+        # Plot the data after preprocessing in the right subplot
+        label1 = df[df['label']==1]
+        label2 = df[df['label']==2]
+        label3 = df[df['label']==3]
 
-    ax2.plot(label1[ts_name], label1[col_name], color='red', label='label 1')
-    ax2.plot(label2[ts_name], label2[col_name], color='blue', label='label 2')
-    ax2.plot(label3[ts_name], label3[col_name], color='green', label='label 3')
+        ax2.plot(label1[ts_name], label1[col_name], color='red', label='label 1')
+        ax2.plot(label2[ts_name], label2[col_name], color='blue', label='label 2')
+        ax2.plot(label3[ts_name], label3[col_name], color='green', label='label 3')
+    else:
+        ax2.plot(df[ts_name], df[col_name], color='black', label='data')
+        
                          
     # Plot the data after preprocessing in the right subplot
     ax2.set_title(title)
