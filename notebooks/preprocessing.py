@@ -37,6 +37,15 @@ class ProcessConfig:
     noise_threshold_factor:float=12 # Threshold factor for MAD noise rejection
     noise_rejection_percent:float=5 # A measurent is rejected if it contains more than this percent of NaN after noise detection.
     validate_only:bool=False # just validate the data
+
+# Return condition for randomized condition code of subject
+def get_condition(subject_id):
+    f=pd.read_csv('zuordnungen.csv',index_col='proband')
+    prob=subject_id[:4]
+    msr=subject_id[5:6]    
+    q=f.loc[prob][int(msr)-1]
+    names=[("3.4","3.4Stim"),("3.4","3.4Placebo"),("30","30Stim"),("30","30Placebo")]
+    return names[int(q)-1]
     
 # Median Absolute Deviation of series data.
 def mad(col):
@@ -103,13 +112,14 @@ def create_baseline_column(df, col, newcol):
     df[newcol]=df[col]-m
 
 
-def create_process_config(eyenum,column,subject_id,condition,timebase,data_path):
+def create_process_config(eyenum,column,subject_id,data_path):
     import preprocessing
     config=ProcessConfig()
     config.eyenum=eyenum
     config.column=column
     config.subject_id=subject_id
-    config.condition=condition
+    (timebase,cond)=get_condition(subject_id)
+    config.condition=cond
     config.timebase=timebase
     config.data_path=data_path
     
@@ -292,8 +302,8 @@ def process(config:ProcessConfig,progress):
     # use the subject_id and stimulation_condition to create the file name
     output_path = config.data_path
     eye_id = f"eye_id{config.eyenum}"    
-    list_file_name = f"{output_path}/{subject_id}_{stimulation_condition}_{eye_id}_{config.column}_list.csv"
-    means_file_name = f"{output_path}/{subject_id}_{stimulation_condition}_{eye_id}_{config.column}_mean.csv"
+    list_file_name = f"{output_path}/{subject_id}-{stimulation_condition}-{eye_id}-{config.column}_list.csv"
+    means_file_name = f"{output_path}/{subject_id}-{stimulation_condition}-{eye_id}-{config.column}_mean.csv"
     progress(f"save processed data to {list_file_name} and {means_file_name}")
     
     df_combined.to_csv(list_file_name, index=False)
