@@ -53,12 +53,12 @@ def mad(col):
     return (col-med).abs().median()
 
 def nan_pct(series):
-    total=series.count()
-    count=series.isna().sum()
+    total=len(series.index) # total number of items
+    count=series.isna().sum() # number of NaN items
     r=100*count/total
     return r
     
-# Compute a new column with data exceeding the threshold replaced by NaN, return the percentage on NaN values in the new column.
+# Compute a new column with data exceeding the threshold replaced by NaN, return the percentage of new NaN values in the new column.
 def compute_and_reject_noise(df,thresf,col,col_out):
     import math
     col_diff=df[col].diff()
@@ -66,12 +66,10 @@ def compute_and_reject_noise(df,thresf,col,col_out):
     threshold=col_diff.median()+thresf*mad_do
     df[col_out]=df[col]
     df.loc[col_diff.abs()>threshold,col_out]=math.nan
-    return nan_pct(df[col_out])
-    #total=df[col_out].count()
-    #count=df[col_out].isna().sum()
-    #nan_percent=100*count/total
-    #return nan_percent
-
+    print(f"nan% of {col}={nan_pct(df[col])}")
+    print(f"nan% of {col_out}={nan_pct(df[col_out])}")
+    nan_pct_grow=nan_pct(df[col_out])-nan_pct(df[col])
+    return nan_pct_grow
 
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
@@ -82,29 +80,21 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smo
     dm=datamatrix.convert.from_pandas(df).series
     return datamatrix.series.blinkreconstruct(dm, vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode)
 
-def reconstruct(config: ProcessConfig, eye, window_size=100):
-    # Remove blinks.
-    plot_all = {
-    99: True  # Specify the index of the data frame you want to plot
-    }
-    col = config.column
-    interp_col = f'{col}_interp'
-    rec_col = f'{col}_rec'
-
-    # eye[interp_col] = eye[col].interpolate(method='linear')
-    eye[rec_col] = blinkreconstruct(eye[col],
+def reconstruct(config: ProcessConfig, eye, col_in, col_out, window_size=100):
+    interpolated=eye[col_in].interpolate(method='linear')
+    eye[col_out] = blinkreconstruct(interpolated,
                                     vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
                                     mode='advanced')
 
     
-def interp_100(config:ProcessConfig, eye, window_size=100):
+def interp_100(config:ProcessConfig, eye, col_in, col_interp, col_out, window_size=100):
     plot_all = {
     99: True  # Specify the index of the data frame you want to plot
 }
     col=config.column
-    eye[f'{col}_rec_interp']=eye[f'{col}_rec'].interpolate(method='linear')
+    eye[f'{col_interp}']=eye[f'{col_in}'].interpolate(method='linear')
     # Use moving average + recenter as low pass.
-    eye[f'{col}_rec_interp_100']=eye[f'{col}_rec_interp'].rolling(window=window_size).mean().shift(-window_size//2)
+    eye[f'{col_out}']=eye[f'{col_interp}'].rolling(window=window_size).mean().shift(-window_size//2)
     
 
 def create_baseline_column(df, col, newcol):
@@ -127,7 +117,7 @@ def create_process_config(eyenum,column,subject_id,data_path):
         config.sfactor=50
         config.upper_threshold=12
     elif column=="diameter": 
-        sfactor=1
+        config.sfactor=1
         config.upper_threshold=200
     else: 
         raise ValueError("column")
@@ -228,21 +218,22 @@ def process(config:ProcessConfig,progress):
         # Store the original unprocessed dataframe in a new variable
         df_preprocessed_eye_id_i = df.copy()
         # Call the reconstruct function to remove blinks, interpolate, and smooth the data
-        reconstruct(config,df_preprocessed_eye_id_i) 
+        reconstruct(config,df_preprocessed_eye_id_i,f"{config.column}",f"{config.column}_rec") 
 
         nanp_before=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_gated"])
         nanp_after=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_rec"])
         progress(f"nanp before={nanp_before}, nanp after={nanp_after}")
         
-        if nanp_after>10:
-            progress(f"measurement @{annotation_timestamp} has {nan_percent}% noise data after blinkreconstruct. Rejecting")            
+        if (nanp_after-nanp_before)>10:
+            progress(f"measurement @{annotation_timestamp} has {(nanp_after-nanp_before)}% more noise data after blinkreconstruct. Rejecting")            
         else:
             #df_preprocessed_eye_id_i = PLR2d.mask_pupil_confidence([df_preprocessed_eye_id_i], threshold=confidence_threshold)[0]
             #df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
             #df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=2.0, mask_cols=[config.column])[0]
 
              # remove blinks, interpolate, smooth 
-            interp_100(config,df_preprocessed_eye_id_i)        
+            interp_100(config,df_preprocessed_eye_id_i, f'{config.column}_rec',f'{config.column}_rec_interp',f'{config.column}_rec_interp_100')  
+
             df_preprocessed_eye_id_i[f"{config.column}_original"]=df_preprocessed_eye_id_i[f"{config.column}"]
             df_preprocessed_eye_id_i[f"{config.column}"]=df_preprocessed_eye_id_i[f"{config.column}_rec_interp_100"]
 
