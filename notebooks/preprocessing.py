@@ -66,8 +66,8 @@ def compute_and_reject_noise(df,thresf,col,col_out):
     threshold=col_diff.median()+thresf*mad_do
     df[col_out]=df[col]
     df.loc[col_diff.abs()>threshold,col_out]=math.nan
-    print(f"nan% of {col}={nan_pct(df[col])}")
-    print(f"nan% of {col_out}={nan_pct(df[col_out])}")
+    #print(f"nan% of {col}={nan_pct(df[col])}")
+    #print(f"nan% of {col_out}={nan_pct(df[col_out])}")
     nan_pct_grow=nan_pct(df[col_out])-nan_pct(df[col])
     return nan_pct_grow
 

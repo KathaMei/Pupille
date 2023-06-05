@@ -3,7 +3,7 @@
 data=$1
 
 go() {
-echo "subject,annotation,nan_score,good"
+echo "subject,field,annotation,nan_score,good"
 for x in $data/PJ??/PJ*_Ruhe
 do
  if [ -d $x ] 
