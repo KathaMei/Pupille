@@ -128,7 +128,7 @@ def create_process_config(eyenum,column,subject_id,data_path):
          config.diameter_threshold=30
     elif timebase=="3.4":
          config.stime_start_offset=3.4
-         config.after_var_start_offset=25
+         config.after_var_start_offset=25.5
          config.window_duration=29
          config.diameter_threshold=1
     else: 
@@ -213,14 +213,14 @@ def process(config:ProcessConfig,progress):
     # ------------------------------------------------------------------------------------------------
     progress('preprocess and slice data')
     df_list_eye_id_preprocessed = []
-    for i, df in enumerate(df_list_eye_id):
-
+    df_list_eye_id_preprocessed = []
+    for df, annotation_timestamp in zip(df_list_eye_id, annotation_timestamps):
         # Store the original unprocessed dataframe in a new variable
         df_preprocessed_eye_id_i = df.copy()
         # Call the reconstruct function to remove blinks, interpolate, and smooth the data
         reconstruct(config,df_preprocessed_eye_id_i,f"{config.column}",f"{config.column}_rec") 
 
-        nanp_before=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_gated"])
+        nanp_before=nan_pct(df_preprocessed_eye_id_i[f"{config.column}"])
         nanp_after=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_rec"])
         progress(f"nanp before={nanp_before}, nanp after={nanp_after}")
         
@@ -245,7 +245,7 @@ def process(config:ProcessConfig,progress):
           #  df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
 
             # Add a new column to the dataframe containing its own index number
-            df_preprocessed_eye_id_i['index'] = i
+            #df_preprocessed_eye_id_i['index'] = i
             # Create a baseline column for config.column.
             create_baseline_column(df_preprocessed_eye_id_i, config.column, f'{config.column}_baseline')
             # Append the preprocessed dataframe to the list                    
