@@ -21,7 +21,7 @@ def validate_field(fn, field):
     
 def validate(fn):
     validate_field(fn,"diameter")
-    validate_field(fn,"diameter_3d")
+    #validate_field(fn,"diameter_3d")
     
 for d in sys.argv[1:]: 
     validate(d)

@@ -24,7 +24,7 @@ from dataclasses import dataclass
 class ProcessConfig: 
     eyenum:int=0 #eye0 right, eye1 left
     column:str="unknown" #diameter or diameter_3d
-    sfactor:float=1 #the factor the velocity (vt) should be divided with to detect blinks in the blink_reconstruct
+    sfactor:float="" #the factor the velocity (vt) should be divided with to detect blinks in the blink_reconstruct
     data_path:str="" #path the data is taken
     subject_id:str="" #subject_id
     condition:str="" #1,2,3 or 4: 30Stim, 30Placebo, 3.4Sham, 3.4Placebo
@@ -33,11 +33,12 @@ class ProcessConfig:
     end_time_offset:float=0 #time after stimulation: 26.6s or 30s
     window_duration:float=0  #the time of the whole dataset: start_time_offset + after_var_start_offset
     upper_threshold:float=0 #upper diameter threshold, different for diameter (pixel) and diameter_3d (mm)
-    diameter_threshold:float=0 #lower diameter threshold, different for diameter (pixel) and diameter_3d (mm)
-    noise_threshold_factor:float=12 # Threshold factor for MAD noise rejection
-    noise_rejection_percent:float=5 # A measurent is rejected if it contains more than this percent of NaN after noise detection.
+    lower_threshold:float=0 #lower diameter threshold, different for diameter (pixel) and diameter_3d (mm)
+    nan_reconstruct_threshold: float=0 #threshold percentage of nans after reconstruct function, above thresold removed
+    noise_threshold_factor:float="" # Threshold factor for MAD noise rejection
+    noise_rejection_percent:float="" # A measurent is rejected if it contains more than this percent of NaN after noise detection.
     validate_only:bool=False # just validate the data
-
+    
 # Return condition for randomized condition code of subject
 def get_condition(subject_id):
     f=pd.read_csv('zuordnungen.csv',index_col='proband')
@@ -71,9 +72,10 @@ def compute_and_reject_noise(df,thresf,col,col_out):
     nan_pct_grow=nan_pct(df[col_out])-nan_pct(df[col])
     return nan_pct_grow
 
+
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
-def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
+def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
     import datamatrix
     import datamatrix.series
     import datamatrix.operations
@@ -114,23 +116,29 @@ def create_process_config(eyenum,column,subject_id,data_path):
     config.data_path=data_path
     
     if config.column=="diameter_3d": 
-        config.sfactor=50
-        config.upper_threshold=12
+        config.sfactor=1000
+        config.lower_threshold=1.5
+        config.upper_threshold=9
+        config.noise_threshold_factor=6
+        config.noise_rejection_percent=2
+        config.nan_reconstruct_threshold=5
     elif column=="diameter": 
         config.sfactor=1
-        config.upper_threshold=200
+        config.lower_threshold=40
+        config.upper_threshold=150
+        config.noise_threshold_factor=16
+        config.noise_rejection_percent=20
+        config.nan_reconstruct_threshold=30
     else: 
         raise ValueError("column")
     if config.timebase=="30":
          config.stime_start_offset=30
          config.after_var_start_offset=29
          config.window_duration=59
-         config.diameter_threshold=30
     elif timebase=="3.4":
          config.stime_start_offset=3.4
          config.after_var_start_offset=25.5
          config.window_duration=29
-         config.diameter_threshold=1
     else: 
         raise ValueError("timebase")
     return config
@@ -158,6 +166,7 @@ def process(config:ProcessConfig,progress):
     # Create an empty DataFrame to hold the sliced data
     df_list_eye_id = []
     good_bad=[]
+
     progress('Loop through each annotation timestamp and slice the data')
     # Loop through each annotation timestamp and slice the data
     for annotation_timestamp in annotation_timestamps:
@@ -169,8 +178,8 @@ def process(config:ProcessConfig,progress):
         df_sliced = df[
             (df['pupil_timestamp'] >= window_start) 
             & (df['pupil_timestamp'] <= window_end) 
-            & (df['eye_id'] == config.eyenum) 
-            & (df['confidence']>=0.6)]            
+            & (df['eye_id'] == config.eyenum)] 
+            #& (df['confidence']>=0.6)]
         df_sliced=df_sliced.copy()
         based_timestamps=df_sliced['pupil_timestamp']-(window_start+1)
         # pupil_timestamp_based -1..0 = baseline, 0=stimulation
@@ -183,7 +192,7 @@ def process(config:ProcessConfig,progress):
         else:
             df_list_eye_id.append(df_sliced)
             good_bad.append((subject_id,annotation_timestamp,nan_percent,True))
-    
+
     if config.validate_only:
         return good_bad
     
@@ -211,47 +220,42 @@ def process(config:ProcessConfig,progress):
             'label'] = 3        
         
     # ------------------------------------------------------------------------------------------------
+
     progress('preprocess and slice data')
     df_list_eye_id_preprocessed = []
-    df_list_eye_id_preprocessed = []
+ 
     for df, annotation_timestamp in zip(df_list_eye_id, annotation_timestamps):
         # Store the original unprocessed dataframe in a new variable
         df_preprocessed_eye_id_i = df.copy()
+        
         # Call the reconstruct function to remove blinks, interpolate, and smooth the data
-        reconstruct(config,df_preprocessed_eye_id_i,f"{config.column}",f"{config.column}_rec") 
-
+        reconstruct(config,df_preprocessed_eye_id_i,f"{config.column}",f"{config.column}_rec")
+        
+        # Define the range for the column
+        column_range = (config.lower_threshold, config.upper_threshold)  # Replace min_value and max_value with your desired range
+    
+        # Replace values outside the range with NaN
+        df_preprocessed_eye_id_i.loc[~df_preprocessed_eye_id_i[f"{config.column}_rec"].between(*column_range), f"{config.column}_rec"] = np.nan
+    
         nanp_before=nan_pct(df_preprocessed_eye_id_i[f"{config.column}"])
         nanp_after=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_rec"])
         progress(f"nanp before={nanp_before}, nanp after={nanp_after}")
         
-        if (nanp_after-nanp_before)>10:
+        if (nanp_after-nanp_before)>config.nan_reconstruct_threshold:
             progress(f"measurement @{annotation_timestamp} has {(nanp_after-nanp_before)}% more noise data after blinkreconstruct. Rejecting")            
         else:
-            #df_preprocessed_eye_id_i = PLR2d.mask_pupil_confidence([df_preprocessed_eye_id_i], threshold=confidence_threshold)[0]
-            #df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
-            #df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=2.0, mask_cols=[config.column])[0]
-
-             # remove blinks, interpolate, smooth 
+            # remove blinks, interpolate, smooth 
             interp_100(config,df_preprocessed_eye_id_i, f'{config.column}_rec',f'{config.column}_rec_interp',f'{config.column}_rec_interp_100')  
 
             df_preprocessed_eye_id_i[f"{config.column}_original"]=df_preprocessed_eye_id_i[f"{config.column}"]
             df_preprocessed_eye_id_i[f"{config.column}"]=df_preprocessed_eye_id_i[f"{config.column}_rec_interp_100"]
 
-            # Calculate masked first derivative of the dataframe
 
-          #  df_preprocessed_eye_id_i = PLR2d.remove_threshold([df_preprocessed_eye_id_i], lower_threshold=config.diameter_threshold, upper_threshold=config.upper_threshold, mask_cols=[config.column])[0]
-          #  df_preprocessed_eye_id_i = PLR2d.iqr_threshold([df_preprocessed_eye_id_i], iqr_factor=4, mask_cols=[config.column])[0]
-         #   df_preprocessed_eye_id_i = PLR2d.mask_pupil_zscore([df_preprocessed_eye_id_i], threshold=3.0, mask_cols=[config.column])[0]
-          #  df_preprocessed_eye_id_i = PLR2d.mask_pupil_first_derivative([df_preprocessed_eye_id_i])[0]
-
-            # Add a new column to the dataframe containing its own index number
-            #df_preprocessed_eye_id_i['index'] = i
             # Create a baseline column for config.column.
             create_baseline_column(df_preprocessed_eye_id_i, config.column, f'{config.column}_baseline')
             # Append the preprocessed dataframe to the list                    
             df_list_eye_id_preprocessed.append(df_preprocessed_eye_id_i)
-
-        
+       
     # ------------------------------------------------------------------------------------------------
     df_list_eye_id_preprocessed_filtered = df_list_eye_id_preprocessed.copy()        
     for i in range(len(df_list_eye_id_preprocessed_filtered)):
@@ -281,8 +285,6 @@ def process(config:ProcessConfig,progress):
         df.loc[df['label'].isin([2, 3]), 'time_slot'] = subset['time_slot'].values
 
         df_list_eye_id_preprocessed_filtered[i] = df
-
-
 
 
     progress('merge dataframes')
