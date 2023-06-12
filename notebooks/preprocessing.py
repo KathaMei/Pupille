@@ -101,7 +101,9 @@ def interp_100(config:ProcessConfig, eye, col_in, col_interp, col_out, window_si
 
 def create_baseline_column(df, col, newcol):
     m=df.loc[df['label'] == 1, col].mean()
+    s=df.loc[df['label'] == 1, col].std()
     df[newcol]=df[col]-m
+    return (m,s)
 
 
 def create_process_config(eyenum,column,subject_id,data_path):
@@ -240,9 +242,10 @@ def process(config:ProcessConfig,progress):
         nanp_before=nan_pct(df_preprocessed_eye_id_i[f"{config.column}"])
         nanp_after=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_rec"])
         progress(f"nanp before={nanp_before}, nanp after={nanp_after}")
-        
-        if (nanp_after-nanp_before)>config.nan_reconstruct_threshold:
+        if config.column=="diameter" and (nanp_after-nanp_before)>config.nan_reconstruct_threshold:
             progress(f"measurement @{annotation_timestamp} has {(nanp_after-nanp_before)}% more noise data after blinkreconstruct. Rejecting")            
+        elif config.column=="diameter_3d" and (nanp_before>60 or nanp_after>5):
+            progress(f"measurement @{annotation_timestamp} has {nanp_before} nan_before and {nanp_after} nan_after after blinkreconstruct. Rejecting")            
         else:
             # remove blinks, interpolate, smooth 
             interp_100(config,df_preprocessed_eye_id_i, f'{config.column}_rec',f'{config.column}_rec_interp',f'{config.column}_rec_interp_100')  
