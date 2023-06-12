@@ -1,0 +1,6 @@
+* Plotten - Legende für Baselineplots übersichtlicher machen.
+* Kennziffern ausgeben um zu entscheiden, ob ein Proband wegen fehlerhafter Daten rausgeworfen werden soll.
+* Rückgabe von process Metadaten (Welche Frames wurden warum rausgeschmissen usw.) 
+* Daten so ausgeben, dass sie in einen Bericht übernommen werden können. 
+* PANDOC um einen Bericht für die Daten zu erstellen. 
+
