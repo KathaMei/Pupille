@@ -20,6 +20,8 @@ Created on Fri Apr 21 08:58:14 2023
 @author: Katharina
 """
 from dataclasses import dataclass
+from typing import List
+
 @dataclass 
 class ProcessConfig: 
     eyenum:int=0 #eye0 right, eye1 left
@@ -38,7 +40,31 @@ class ProcessConfig:
     noise_threshold_factor:float="" # Threshold factor for MAD noise rejection
     noise_rejection_percent:float="" # A measurent is rejected if it contains more than this percent of NaN after noise detection.
     validate_only:bool=False # just validate the data
+
+@dataclass
+class ProcessFrame:
+    annotation_ts:float=None
+    valid:bool=True
+    stage:str=""
+    remark:str=""
+    data:pd.DataFrame=None
     
+@dataclass
+class ProcessResult:
+    config: ProcessConfig=None
+    frames=[]
+
+def save_pickle(filename,obj):
+    import pickle
+    with open(filename,"wb") as h: 
+        pickle.dump(obj,h)
+        
+def load_pickle(filename):
+    import pickle
+    with open(filename,"rb") as h:
+        return pickle.load(h)
+   
+
 # Return condition for randomized condition code of subject
 def get_condition(subject_id):
     f=pd.read_csv('zuordnungen.csv',index_col='proband')
@@ -147,6 +173,10 @@ def create_process_config(eyenum,column,subject_id,data_path):
 
 def process(config:ProcessConfig,progress):
     progress("Starting process2")
+
+    result=ProcessResult()
+    result.config=config
+    
     subject_id = config.subject_id    
     stimulation_condition = config.condition
     
@@ -166,7 +196,6 @@ def process(config:ProcessConfig,progress):
 
     # ------------------------------------------------------------------------------------------------
     # Create an empty DataFrame to hold the sliced data
-    df_list_eye_id = []
     good_bad=[]
 
     progress('Loop through each annotation timestamp and slice the data')
@@ -176,6 +205,14 @@ def process(config:ProcessConfig,progress):
         window_start = annotation_timestamp - 1.0
         window_end = window_start + window_duration
 
+#class ProcessFrame:
+#    annotation_pos:float:""
+#    data:pd.DataFrame=None
+#    valid:bool=False
+        pf=ProcessFrame()
+        pf.annotation_ts=annotation_timestamp
+        pf.stage="slice"
+        
         # Select the rows that fall within the window
         df_sliced = df[
             (df['pupil_timestamp'] >= window_start) 
@@ -189,21 +226,28 @@ def process(config:ProcessConfig,progress):
         
         nan_percent=compute_and_reject_noise(df_sliced,config.noise_threshold_factor,f"{config.column}",f"{config.column}_gated")
         if (nan_percent > config.noise_rejection_percent): 
-            progress(f"measurement @{annotation_timestamp} has {nan_percent}% noise data. Rejecting")
+            pf.remark=f"measurement @{annotation_timestamp} has {nan_percent}% noise data. Rejecting"
             good_bad.append((subject_id,annotation_timestamp,nan_percent,False))
+            pf.valid=False
+            pf.data=None
         else:
-            df_list_eye_id.append(df_sliced)
             good_bad.append((subject_id,annotation_timestamp,nan_percent,True))
-
+            pf.valid=True
+            pf.data=df_sliced
+            
+        result.frames.append(pf)
+        
     if config.validate_only:
         return good_bad
-    
-    if not df_list_eye_id:
-        return []
         
     # ------------------------------------------------------------------------------------------------
     progress("Label the data")
-    for df in df_list_eye_id:
+    for pf in result.frames:
+        if not(pf.valid): 
+            continue
+        df=pf.data
+        pf.stage="label"
+        
         # df[0..1] = label 1
         # df[1..config.stime_start_offset] = Label 2
         # df[rest]=Label 3 
@@ -224,46 +268,53 @@ def process(config:ProcessConfig,progress):
     # ------------------------------------------------------------------------------------------------
 
     progress('preprocess and slice data')
-    df_list_eye_id_preprocessed = []
- 
-    for df, annotation_timestamp in zip(df_list_eye_id, annotation_timestamps):
+    for pf in result.frames:
         # Store the original unprocessed dataframe in a new variable
-        df_preprocessed_eye_id_i = df.copy()
+        if not(pf.valid): 
+            continue
+            
+        pf.stage="preprocess"
+        
+        df=pf.data.copy()
         
         # Call the reconstruct function to remove blinks, interpolate, and smooth the data
-        reconstruct(config,df_preprocessed_eye_id_i,f"{config.column}",f"{config.column}_rec")
+        reconstruct(config,df,f"{config.column}",f"{config.column}_rec")
         
         # Define the range for the column
         column_range = (config.lower_threshold, config.upper_threshold)  # Replace min_value and max_value with your desired range
     
         # Replace values outside the range with NaN
-        df_preprocessed_eye_id_i.loc[~df_preprocessed_eye_id_i[f"{config.column}_rec"].between(*column_range), f"{config.column}_rec"] = np.nan
+        df.loc[~df[f"{config.column}_rec"].between(*column_range), f"{config.column}_rec"] = np.nan
     
-        nanp_before=nan_pct(df_preprocessed_eye_id_i[f"{config.column}"])
-        nanp_after=nan_pct(df_preprocessed_eye_id_i[f"{config.column}_rec"])
+        nanp_before=nan_pct(df[f"{config.column}"])
+        nanp_after=nan_pct(df[f"{config.column}_rec"])
         progress(f"nanp before={nanp_before}, nanp after={nanp_after}")
         if config.column=="diameter" and (nanp_after-nanp_before)>config.nan_reconstruct_threshold:
-            progress(f"measurement @{annotation_timestamp} has {(nanp_after-nanp_before)}% more noise data after blinkreconstruct. Rejecting")            
+            pf.remark=f"measurement @{pf.annotation_ts} has {(nanp_after-nanp_before)}% more noise data after blinkreconstruct. Rejecting" 
+            pf.valid=False            
         elif config.column=="diameter_3d" and (nanp_before>60 or nanp_after>5):
-            progress(f"measurement @{annotation_timestamp} has {nanp_before} nan_before and {nanp_after} nan_after after blinkreconstruct. Rejecting")            
+            pf.remark=f"measurement @{pf.annotation_ts} has {nanp_before} nan_before and {nanp_after} nan_after after blinkreconstruct. Rejecting"
+            pf.valid=False         
         else:
             # remove blinks, interpolate, smooth 
-            interp_100(config,df_preprocessed_eye_id_i, f'{config.column}_rec',f'{config.column}_rec_interp',f'{config.column}_rec_interp_100')  
+            interp_100(config,df, f'{config.column}_rec',f'{config.column}_rec_interp',f'{config.column}_rec_interp_100')  
 
-            df_preprocessed_eye_id_i[f"{config.column}_original"]=df_preprocessed_eye_id_i[f"{config.column}"]
-            df_preprocessed_eye_id_i[f"{config.column}"]=df_preprocessed_eye_id_i[f"{config.column}_rec_interp_100"]
-
+            df[f"{config.column}_original"]=df[f"{config.column}"]
+            df[f"{config.column}"]=df[f"{config.column}_rec_interp_100"]
 
             # Create a baseline column for config.column.
-            create_baseline_column(df_preprocessed_eye_id_i, config.column, f'{config.column}_baseline')
-            # Append the preprocessed dataframe to the list                    
-            df_list_eye_id_preprocessed.append(df_preprocessed_eye_id_i)
+            create_baseline_column(df, config.column, f'{config.column}_baseline')
+            
+        pf.data=df
        
     # ------------------------------------------------------------------------------------------------
-    df_list_eye_id_preprocessed_filtered = df_list_eye_id_preprocessed.copy()        
-    for i in range(len(df_list_eye_id_preprocessed_filtered)):
-        df = df_list_eye_id_preprocessed_filtered[i]
-
+    for pf in result.frames:
+        # Store the original unprocessed dataframe in a new variable
+        if not(pf.valid): 
+            continue            
+        df=pf.data.copy()
+        pf.stage="time_slot"
+        
         # Assign time_slot 0 to the baseline data (label=1)
         df.loc[df['label'] == 1, 'time_slot'] = 0
 
@@ -287,11 +338,12 @@ def process(config:ProcessConfig,progress):
         # Assign the time_slot values back to the original DataFrame
         df.loc[df['label'].isin([2, 3]), 'time_slot'] = subset['time_slot'].values
 
-        df_list_eye_id_preprocessed_filtered[i] = df
+        pf.data=df
 
+    return result
 
     progress('merge dataframes')
-    # Concatenate all the data frames into a single data frame
+       
     df_combined = pd.concat(df_list_eye_id_preprocessed_filtered)
 
     #
