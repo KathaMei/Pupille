@@ -52,7 +52,7 @@ class ProcessFrame:
 @dataclass
 class ProcessResult:
     config: ProcessConfig=None
-    frames=[]
+    frames:list[ProcessFrame]=None
 
 def save_pickle(filename,obj):
     import pickle
@@ -176,6 +176,7 @@ def process(config:ProcessConfig,progress):
 
     result=ProcessResult()
     result.config=config
+    result.frames=[]
     
     subject_id = config.subject_id    
     stimulation_condition = config.condition
