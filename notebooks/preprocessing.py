@@ -41,7 +41,10 @@ class ProcessConfig:
 
 @dataclass
 class ProcessFrame:
+    baseline_mean:float=None
+    baseline_std:float=None
     annotation_ts:float=None
+    zscore:float=None
     valid:bool=True
     stage:str=""
     remark:str=""
@@ -50,6 +53,7 @@ class ProcessFrame:
 @dataclass
 class ProcessResult:
     config: ProcessConfig=None
+    num_valid:int=0
     frames:list[ProcessFrame]=None
 
 def save_pickle(filename,obj):
@@ -128,7 +132,6 @@ def create_baseline_column(df, col, newcol):
     s=df.loc[df['label'] == 1, col].std()
     df[newcol]=df[col]-m
     return (m,s)
-    display(m)
 
         
 def create_process_config(eyenum,column,subject_id,data_path):
@@ -297,7 +300,7 @@ def process(config:ProcessConfig,progress):
             df[f"{config.column}"]=df[f"{config.column}_rec_interp_100"]
 
             # Create a baseline column for config.column.
-            create_baseline_column(df, config.column, f'{config.column}_baseline')
+            (pf.baseline_mean,pf.baseline_std)=create_baseline_column(df, config.column, f'{config.column}_baseline')
         
         pf.data=df
         
@@ -351,7 +354,24 @@ def process(config:ProcessConfig,progress):
         df.loc[df['label'].isin([2, 3]), 'time_slot'] = subset['time_slot'].values
 
         pf.data=df
-    
+
+    # compute and assign zscore for baseline_mean. mark frame as invalid if is falls outside the accepted range.
+    bv=[f.baseline_mean for f in result.frames if f.valid]
+    import scipy.stats as stats
+    scores=stats.zscore(bv)
+    for (frame,z) in zip([f for f in result.frames if f.valid],scores):
+        frame.stage="zscore"
+        frame.zscore=z
+        if (z<-2.0 or z>2.0):
+            frame.valid=False
+            frame.remark="zscore not in range -2..2"
+    result.num_valid=sum([1 for f in result.frames if f.valid])
+
+    for pf in result.frames:
+        if not(pf.valid): 
+            continue            
+        pf.stage="finished"
+
     return result
 
 
