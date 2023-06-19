@@ -1,5 +1,6 @@
-# preprocessing.py
 import sys
+sys.path.append("../Pupillengröße/Skripte/")
+# PLR_preprocessing.py
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +8,6 @@ import csv
 import os.path
 import shutil
 from datetime import datetime
-sys.path.append("../Pupillengröße/Skripte/")
 
 
 #!/usr/bin/env python3
@@ -32,6 +32,8 @@ class ProcessConfig:
     stime_time_offset:float=0 #stimulation duration: 3.4s or 30s
     after_var_start_offset:float=0 #time after stimulation: 26.6s or 30s
     window_duration:float=0  #the time of the whole dataset: stime_time_offset + after_var_start_offset
+    upper_threshold:float=0 #upper diameter threshold, different for diameter (pixel) and diameter_3d (mm)
+    lower_threshold:float=0 #lower diameter threshold, different for diameter (pixel) and diameter_3d (mm)
     nan_reconstruct_threshold: float=0 #threshold percentage of nans after reconstruct function for diameter, above threshold removed
     nan_before_threshold:float=0 #threshold percentage of nans before reconstruct function for diameter_3d, high percentage hint a lot of missing data, above threshold removed
     nan_after_threshold:float=0 #threshold percentage of nans after reconstruct function for dia,eter_3d,above threshold removed
@@ -63,7 +65,7 @@ def load_pickle(filename):
         return pickle.load(h)
    
 
-#Return condition for randomized condition code of subject
+# Return condition for randomized condition code of subject
 def get_condition(subject_id):
     f=pd.read_csv('zuordnungen.csv',index_col='proband')
     prob=subject_id[:4]
@@ -99,7 +101,7 @@ def compute_and_reject_noise(df,thresf,col,col_out):
 
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
-def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
+def blinkreconstruct(df, vt=1, vt_start=10, vt_end=5, maxdur=800, margin=20, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
     import datamatrix
     import datamatrix.series
     import datamatrix.operations
@@ -128,9 +130,8 @@ def create_baseline_column(df, col, newcol):
     s=df.loc[df['label'] == 1, col].std()
     df[newcol]=df[col]-m
     return (m,s)
-    display(m)
 
-        
+
 def create_process_config(eyenum,column,subject_id,data_path):
     import preprocessing
     config=ProcessConfig()
@@ -144,12 +145,16 @@ def create_process_config(eyenum,column,subject_id,data_path):
     
     if config.column=="diameter_3d": 
         config.sfactor=1000
+        config.lower_threshold=1.5
+        config.upper_threshold=9
         config.noise_threshold_factor=6
         config.noise_rejection_percent=2
         config.nan_before_threshold=60
         config.nan_after_threshold=5
     elif column=="diameter": 
         config.sfactor=1
+        config.lower_threshold=40
+        config.upper_threshold=150
         config.noise_threshold_factor=16
         config.noise_rejection_percent=20
         config.nan_reconstruct_threshold=30
@@ -271,15 +276,12 @@ def process(config:ProcessConfig,progress):
         # Call the reconstruct function to remove blinks, interpolate, and smooth the data
         reconstruct(config,df,f"{config.column}",f"{config.column}_rec")
         
-         # Define the range for the column
-        if config.column=="diameter":
-            column_range = (40, 150)# Replace min_value and max_value with your desired range
-        elif  config.column=="diameter_3d":
-            column_range = (1.5, 9)
-        else:
+        # Define the range for the column
+        column_range = (config.lower_threshold, config.upper_threshold)  # Replace min_value and max_value with your desired range
+    
         # Replace values outside the range with NaN
-            df.loc[~df[f"{config.column}_rec"].between(*column_range), f"{config.column}_rec"] = np.nan
-
+        df.loc[~df[f"{config.column}_rec"].between(*column_range), f"{config.column}_rec"] = np.nan
+    
         nanp_before=nan_pct(df[f"{config.column}"])
         nanp_after=nan_pct(df[f"{config.column}_rec"])
         progress(f"nanp before={nanp_before}, nanp after={nanp_after}")
@@ -301,27 +303,28 @@ def process(config:ProcessConfig,progress):
         
         pf.data=df
         
-#############      
-    #progress('preprocess and slice data')
+       
+   # progress('preprocess and slice data')
     #for pf in result.frames:
-    #    if not(pf.valid): 
-    #        continue
         # Store the original unprocessed dataframe in a new variable
-
-     #   pf.stage="remove subjects"
-     #   df=pf.data.copy()
-     #   if config.timebase=='30s' and f"Anzahl der Messungen: {len(eye0.frames)}"<5:
-     #       pf.valid=False
-     #   elif config.timebase=='3.4s' and f"Anzahl der Messungen: {len(eye0.frames)}"<10:
-     #       pf.valid=False
-     #   else:
-            #create baseline histogram
-###############
+     #   if not(pf.valid): 
+      #      continue
+            
+       # pf.stage="remove subjects"
         
+        #df=pf.data.copy()
+        
+        #if Anzahl der Messungen < 60% 
+         #   pf.valid=False
+        #else
+         #   create baseline histogram
+     
+    
     # ------------------------------------------------------------------------------------------------
 
-# Store the original unprocessed dataframe in a new variable
+
     for pf in result.frames:
+        # Store the original unprocessed dataframe in a new variable
         if not(pf.valid): 
             continue            
         df=pf.data.copy()
@@ -355,30 +358,24 @@ def process(config:ProcessConfig,progress):
     return result
 
 
-##################
-    # List to store the mean values
-    #mean_values = []
+    mean_values = []  # List to store the mean values
+    for pf in result.frames:
+        df=pf.data.copy()
+        pf.stage="time_baseline"
+        mean_time_slot_0 = df.loc[df['time_slot'] == 0, 'time_slot'].mean()
+        mean_values.append(mean_time_slot_0)  # Append mean value to the list
 
-    # Loop through the data frames
-    #for pf in result.frames:
-    #    df = pf.data.copy()
-    #    pf.stage = "time_baseline"
-    #    mean_time_slot_0 = df.loc[df['time_slot'] == 0, 'time_slot'].mean()
-    #    mean_values.append(mean_time_slot_0)  # Append mean value to the list
+    # Plotting the histogram
+    plt.hist(mean_values, bins='auto', density=True)
 
-    # Call the plot_mean_values function to display the mean values
-    #plot_mean_values(mean_values)
+    plt.xlabel('Mean of time_slot=0')
+    plt.ylabel('Density')
+    plt.title('Histogram of Mean Values')
 
-
-    #mean_values = []  # List to store the mean values
-    #for pf in result.frames:
-    #    df=pf.data.copy()
-    #    pf.stage="time_baseline"
-    #    mean_time_slot_0 = df.loc[df['time_slot'] == 0, 'time_slot'].mean()
-    #    mean_values.append(mean_time_slot_0)  # Append mean value to the list
+    plt.show()
+   
 
 
-##################
 
 
 

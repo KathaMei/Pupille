@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 def plot_preprocessed(df,title,ts_name,col_name):
     # Extract the timestamp and diameter data from the dataframe
+    ts=what['pupil_timestamp'].iloc[0]
     pupil_timestamp = df[ts_name]
     diameter = df[col_name]
 
@@ -39,3 +40,13 @@ def plot_preprocessed(df,title,ts_name,col_name):
     ax2.set_title(title)
     ax2.set_xlabel("Pupil Timestamp")
     ax2.set_ylabel("Diameter in mm/pixels")
+
+
+#def baseline_histogram(df, title, col_in):
+#    baseline_means = df[col_in].values  # Retrieve baseline means from the specified column
+    # Plot histogram of baseline means
+ #   plt.hist(baseline_means, bins=10)  # Adjust the number of bins as desired
+ #   plt.xlabel('Pupil Timestamp Based')
+ #   plt.ylabel('Baseline Mean')
+  #  plt.title(title)
+  #  plt.show()

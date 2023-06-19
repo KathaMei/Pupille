@@ -3,12 +3,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 import logging as log
 from dataclasses import dataclass
-import sys
 
 @dataclass 
 class DataConfig: 
-    window_duration:float=30
+    window_duration:float=14
+    eyenum:int=0 #eye0 right, eye1 left
+    column:str="unknown" #diameter or diameter_3d
+    subject_id:str="" #subject_id
+    condition:str="" #1,2,3 or 4: 30Stim, 30Placebo, 3.4Sham, 3.4Placebo
 
+def create_process_data_config(eyenum,column,subject_id,data_path):
+    #import preprocessing
+    config=DataConfig()
+    config.eyenum=eyenum
+    config.column=column
+    config.subject_id=subject_id
+    (timebase,cond)=get_condition(subject_id)
+    config.condition=cond
+    
+    if config.column=="diameter_3d": 
+    elif column=="diameter": 
+    else: 
+        raise ValueError("column")
+    return config
+
+    
 def plot(df, title):
         fig, ax = plt.subplots(2,2)
         ax[0,0].set_title(title)
@@ -37,29 +56,11 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
     df=load_df(f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv", csv_cols)
     # df = pd.read_csv(f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv", index_col=False, usecols=csv_cols)
     # add moving average for the whole dataset
-    df['diameter_100']=df['diameter'].rolling(window=100).mean()
-    annotation_timestamps = np.load(f"{data_dir}/{subject_id[:4]}/{subject_id}/annotation_timestamps.npy")
-    res=[]
-    for annotation_timestamp in annotation_timestamps:
-        # Calculate the start and end timestamps for the window after the annotation
-        window_start = annotation_timestamp - 5.0
-        window_end = window_start + config.window_duration
-        
-        # Select the rows that fall within the window
-        df_sliced = df[(df['pupil_timestamp'].between(window_start,window_end)) & (df['eye_id'] == eye_id)]
-        df_sliced=df_sliced.copy()
-        df_sliced['pupil_timestamp_based'] = df_sliced['pupil_timestamp'] - window_start
-        # Do more cleanup
 
-        # Add a timeslot column
-        df_sliced['rowid'] = range(len(df_sliced)) 
-        df_sliced['timeslot'] = df_sliced['rowid'] // 1000
-        res.append(df_sliced)        
-    return res
 
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
-def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
+def blinkreconstruct(df, vt=1, vt_start=10, vt_end=5, maxdur=800, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
     display(type(df))
     import datamatrix
     import datamatrix.series
@@ -77,10 +78,10 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smo
      
     
 
-if __name__=="__main__": 
-    import pandas as pd
-    subject_id="PJ02_1_Ruhe"
-    window_duration=30
-    data_dir="./Users/Katharina/Desktop/Beispieldaten/"
-    config=DataConfig(window_duration=30)
-    prepare(data_dir,subject_id,0,config)
+#if __name__=="__main__": 
+#    import pandas as pd
+#    subject_id="PJ02_1_Ruhe"
+#    window_duration=30
+#    data_dir="./Users/Katharina/Desktop/Beispieldaten/"
+#    config=DataConfig(window_duration=30)
+#    prepare(data_dir,subject_id,0,config)
