@@ -11,9 +11,10 @@ def pps(fn, field,eye):
     fn=fn.rstrip("/")
     d,subject_id=os.path.split(fn)
     data_dir,_=os.path.split(d)
+    out_dir="/Users/Katharina/Desktop/ErgebnissePreprocessing"
     config=preprocessing.create_process_config(eye,field,subject_id,data_dir)
     res=preprocessing.process(config,noprint)
-    outfn=f"{data_dir}/{subject_id}_{field}_{eye}.pickle"
+    outfn=f"{out_dir}/{subject_id}_{field}_{eye}.pickle"
     print(f"saving results to {outfn}")
     preprocessing.save_pickle(outfn,res)
     

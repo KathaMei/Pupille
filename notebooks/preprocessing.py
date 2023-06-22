@@ -55,6 +55,7 @@ class ProcessResult:
     config: ProcessConfig=None
     num_valid:int=0
     frames:list[ProcessFrame]=None
+    percentage_valid:int=0
 
 def save_pickle(filename,obj):
     import pickle
@@ -362,10 +363,25 @@ def process(config:ProcessConfig,progress):
     for (frame,z) in zip([f for f in result.frames if f.valid],scores):
         frame.stage="zscore"
         frame.zscore=z
-        if (z<-2.0 or z>2.0):
+        if (z<-2.5 or z>2.5):
             frame.valid=False
-            frame.remark="zscore not in range -2..2"
-    result.num_valid=sum([1 for f in result.frames if f.valid])
+            frame.remark="zscore not in range -2.5 to 2.5"
+    result.num_valid=sum([1 for f in result.frames if f.valid])           
+            
+            
+  
+#############################
+    # Check if the number of valid frames is below the threshold
+    threshold=3 #30s 3, 3.4s 6
+    if result.num_valid < threshold:
+        for frame in result.frames:
+            frame.valid = False
+            frame.stage = "Number of frames under threshold"
+            frame.remark = "num_valid < threshold"
+
+    result.num_valid = sum([1 for f in result.frames if f.valid])
+################################################
+
 
     for pf in result.frames:
         if not(pf.valid): 
@@ -373,33 +389,6 @@ def process(config:ProcessConfig,progress):
         pf.stage="finished"
 
     return result
-
-
-##################
-    # List to store the mean values
-    #mean_values = []
-
-    # Loop through the data frames
-    #for pf in result.frames:
-    #    df = pf.data.copy()
-    #    pf.stage = "time_baseline"
-    #    mean_time_slot_0 = df.loc[df['time_slot'] == 0, 'time_slot'].mean()
-    #    mean_values.append(mean_time_slot_0)  # Append mean value to the list
-
-    # Call the plot_mean_values function to display the mean values
-    #plot_mean_values(mean_values)
-
-
-    #mean_values = []  # List to store the mean values
-    #for pf in result.frames:
-    #    df=pf.data.copy()
-    #    pf.stage="time_baseline"
-    #    mean_time_slot_0 = df.loc[df['time_slot'] == 0, 'time_slot'].mean()
-    #    mean_values.append(mean_time_slot_0)  # Append mean value to the list
-
-
-##################
-
 
 
 
@@ -435,3 +424,4 @@ def process(config:ProcessConfig,progress):
         progress(df_means)
 
     return df_list_eye_id_preprocessed_filtered
+# ------------------------------------------------------------------------------------------------
