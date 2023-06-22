@@ -7,6 +7,7 @@ import csv
 import os.path
 import shutil
 from datetime import datetime
+import math
 sys.path.append("../Pupillengröße/Skripte/")
 
 
@@ -38,9 +39,12 @@ class ProcessConfig:
     noise_threshold_factor:float="" # Threshold factor for MAD noise rejection
     noise_rejection_percent:float="" # A measurent is rejected if it contains more than this percent of NaN after noise detection.
     validate_only:bool=False # just validate the data
-
+    survive_threshold:int=3 # minimum number of surviving frames required for a result set.
+    baseline_length:float=2.0 
+    
 @dataclass
 class ProcessFrame:
+    index:int=None
     baseline_mean:float=None
     baseline_std:float=None
     annotation_ts:float=None
@@ -200,10 +204,11 @@ def process(config:ProcessConfig,progress):
     good_bad=[]
 
     progress('Loop through each annotation timestamp and slice the data')
+    index=0
     # Loop through each annotation timestamp and slice the data
     for annotation_timestamp in annotation_timestamps:
         # Calculate the start and end timestamps for the window after the annotation
-        window_start = annotation_timestamp - 1.0
+        window_start = annotation_timestamp - config.baseline_length
         window_end = window_start + window_duration
 
 #class ProcessFrame:
@@ -213,7 +218,8 @@ def process(config:ProcessConfig,progress):
         pf=ProcessFrame()
         pf.annotation_ts=annotation_timestamp
         pf.stage="slice"
-        
+        pf.index=index
+        index=index+1
         # Select the rows that fall within the window
         df_sliced = df[
             (df['pupil_timestamp'] >= window_start) 
@@ -221,7 +227,7 @@ def process(config:ProcessConfig,progress):
             & (df['eye_id'] == config.eyenum)] 
             #& (df['confidence']>=0.6)]
         df_sliced=df_sliced.copy()
-        based_timestamps=df_sliced['pupil_timestamp']-(window_start+1)
+        based_timestamps=df_sliced['pupil_timestamp']-(window_start+config.baseline_length)
         # pupil_timestamp_based -1..0 = baseline, 0=stimulation
         df_sliced['pupil_timestamp_based']=based_timestamps
         
@@ -299,10 +305,12 @@ def process(config:ProcessConfig,progress):
 
             df[f"{config.column}_original"]=df[f"{config.column}"]
             df[f"{config.column}"]=df[f"{config.column}_rec_interp_100"]
-
+            
             # Create a baseline column for config.column.
-            (pf.baseline_mean,pf.baseline_std)=create_baseline_column(df, config.column, f'{config.column}_baseline')
-        
+            (pf.baseline_mean,pf.baseline_std)=create_baseline_column(df, f'{config.column}', f'{config.column}_baseline')
+            if math.isnan(pf.baseline_mean):
+                pf.valid=False
+                pf.remark="baseline is nan. Check length of df.loc[df['label'] == 1]"
         pf.data=df
         
 #############      
@@ -369,17 +377,18 @@ def process(config:ProcessConfig,progress):
     result.num_valid=sum([1 for f in result.frames if f.valid])           
             
             
+################################################
   
-#############################
     # Check if the number of valid frames is below the threshold
-    threshold=3 #30s 3, 3.4s 6
-    if result.num_valid < threshold:
-        for frame in result.frames:
-            frame.valid = False
-            frame.stage = "Number of frames under threshold"
-            frame.remark = "num_valid < threshold"
-
     result.num_valid = sum([1 for f in result.frames if f.valid])
+    threshold=3 #30s 3, 3.4s 6
+    if result.num_valid < config.survive_threshold:
+        for frame in result.frames:
+            if frame.valid:
+                frame.valid = False
+                frame.stage = "Number of frames under threshold"
+                frame.remark = "num_valid < threshold"
+
 ################################################
 
 
