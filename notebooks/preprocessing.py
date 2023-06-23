@@ -39,7 +39,7 @@ class ProcessConfig:
     noise_threshold_factor:float="" # Threshold factor for MAD noise rejection
     noise_rejection_percent:float="" # A measurent is rejected if it contains more than this percent of NaN after noise detection.
     validate_only:bool=False # just validate the data
-    survive_threshold:int=3 # minimum number of surviving frames required for a result set.
+    survive_threshold:int=0 # minimum number of surviving frames required for a result set, in this case when less than 10% of dataframes left - removal
     baseline_length:float=2.0 
     
 @dataclass
@@ -116,7 +116,7 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smo
     return datamatrix.series.blinkreconstruct(dm,vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode)
 
 def reconstruct(config: ProcessConfig, eye, col_in, col_out, window_size=100):
-    interpolated=eye[col_in].interpolate(method='linear')
+    interpolated=eye[col_in].interpolate(method='cubic')
     eye[col_out] = blinkreconstruct(interpolated,
                                     vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
                                     mode='advanced')
@@ -127,7 +127,7 @@ def interp_100(config:ProcessConfig, eye, col_in, col_interp, col_out, window_si
     99: True  # Specify the index of the data frame you want to plot
 }
     col=config.column
-    eye[f'{col_interp}']=eye[f'{col_in}'].interpolate(method='linear')
+    eye[f'{col_interp}']=eye[f'{col_in}'].interpolate(method='cubic')
     # Use moving average + recenter as low pass.
     eye[f'{col_out}']=eye[f'{col_interp}'].rolling(window=window_size).mean().shift(-window_size//2)
     
@@ -167,10 +167,12 @@ def create_process_config(eyenum,column,subject_id,data_path):
          config.stime_start_offset=30
          config.after_var_start_offset=29
          config.window_duration=59
+         config.survive_threshold=3
     elif timebase=="3.4":
          config.stime_start_offset=3.4
          config.after_var_start_offset=25.5
          config.window_duration=29
+         config.survive_threshold=5
     else: 
         raise ValueError("timebase")
     return config
@@ -313,22 +315,6 @@ def process(config:ProcessConfig,progress):
                 pf.remark="baseline is nan. Check length of df.loc[df['label'] == 1]"
         pf.data=df
         
-#############      
-    #progress('preprocess and slice data')
-    #for pf in result.frames:
-    #    if not(pf.valid): 
-    #        continue
-        # Store the original unprocessed dataframe in a new variable
-
-     #   pf.stage="remove subjects"
-     #   df=pf.data.copy()
-     #   if config.timebase=='30s' and f"Anzahl der Messungen: {len(eye0.frames)}"<5:
-     #       pf.valid=False
-     #   elif config.timebase=='3.4s' and f"Anzahl der Messungen: {len(eye0.frames)}"<10:
-     #       pf.valid=False
-     #   else:
-            #create baseline histogram
-###############
         
     # ------------------------------------------------------------------------------------------------
 
@@ -377,11 +363,10 @@ def process(config:ProcessConfig,progress):
     result.num_valid=sum([1 for f in result.frames if f.valid])           
             
             
-################################################
+    # ------------------------------------------------------------------------------------------------
   
     # Check if the number of valid frames is below the threshold
     result.num_valid = sum([1 for f in result.frames if f.valid])
-    threshold=3 #30s 3, 3.4s 6
     if result.num_valid < config.survive_threshold:
         for frame in result.frames:
             if frame.valid:
@@ -389,7 +374,7 @@ def process(config:ProcessConfig,progress):
                 frame.stage = "Number of frames under threshold"
                 frame.remark = "num_valid < threshold"
 
-################################################
+    # ------------------------------------------------------------------------------------------------
 
 
     for pf in result.frames:
