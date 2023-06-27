@@ -64,7 +64,7 @@ class ProcessResult:
 def save_pickle(filename,obj):
     import pickle
     with open(filename,"wb") as h: 
-        pickle.dump(obj,h)
+        pickle.dump(obj,h,protocol=5)
         
 def load_pickle(filename):
     import pickle
@@ -420,7 +420,7 @@ def process(config:ProcessConfig,progress):
     return df_list_eye_id_preprocessed_filtered
 # ------------------------------------------------------------------------------------------------
 
-def average_frames(pr:ProcessResult, field:str, interval="10ms")->pd.DataFrame:
+def average_frames_by_resample(pr:ProcessResult, field:str, interval="10ms")->pd.DataFrame:
     # collect resampled frames here
     ret=[]
     for f in pr.frames:
@@ -433,8 +433,26 @@ def average_frames(pr:ProcessResult, field:str, interval="10ms")->pd.DataFrame:
             # resample data according to interval
             df.set_index('ts', inplace=True) 
             df=df.resample(interval).mean().interpolate()
+            # print(df)
+            # df=df.resample(interval).count() #.interpolate(method='polynomial', order=3)
             ret.append(df)        
     # now average all rows with the same timestamp
     ret=pd.concat(ret)
+    # av_df = ret.groupby('ts')[field].sum() # mean().reset_index()
     av_df = ret.groupby('ts')[field].mean().reset_index()
     return av_df
+
+def average_frames_by_binning(pr:ProcessResult, field:str, interval_ms=10)->pd.DataFrame:
+    # all the valid frames
+    valids=[f.data for f in pr.frames if f.valid]
+    df=pd.concat(valids)
+    # remove baseline values
+    df=df.loc[df.label!=1,['pupil_timestamp_based',field,'label']]
+    df=df.copy()
+    # a timestamp column which is quantized by interval_ms
+    df['ts']=(interval_ms/1000.0)*np.round(df.pupil_timestamp_based*1000/interval_ms)
+    # df['ts']=np.round(df.pupil_timestamp_based,decimals=1)
+    # average over all data with the same timestamp
+    av_df = df.groupby('ts')[field].mean().reset_index()
+    return av_df
+
