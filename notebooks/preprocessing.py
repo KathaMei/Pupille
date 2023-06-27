@@ -419,3 +419,22 @@ def process(config:ProcessConfig,progress):
 
     return df_list_eye_id_preprocessed_filtered
 # ------------------------------------------------------------------------------------------------
+
+def average_frames(pr:ProcessResult, field:str, interval="10ms")->pd.DataFrame:
+    # collect resampled frames here
+    ret=[]
+    for f in pr.frames:
+        if f.valid:
+            df=f.data
+            # remove baseline values pre copy
+            df=df.loc[df.label!=1,['pupil_timestamp_based',field,'label']].copy()
+            # create a timestamp column with the right data time
+            df['ts']=pd.to_datetime(df['pupil_timestamp_based'], unit='s')
+            # resample data according to interval
+            df.set_index('ts', inplace=True) 
+            df=df.resample(interval).mean().interpolate()
+            ret.append(df)        
+    # now average all rows with the same timestamp
+    ret=pd.concat(ret)
+    av_df = ret.groupby('ts')[field].mean().reset_index()
+    return av_df
