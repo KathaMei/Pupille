@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 def plot_preprocessed(df,title,ts_name,col_name):
     # Extract the timestamp and diameter data from the dataframe
-    ts=what['pupil_timestamp'].iloc[0]
+    ts=df['pupil_timestamp'].iloc[0]
     pupil_timestamp = df[ts_name]
     diameter = df[col_name]
 
