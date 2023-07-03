@@ -305,20 +305,14 @@ def process(config:ProcessConfig,progress):
             pf.remark=f"measurement @{pf.annotation_ts} has {nanp_before} nan_before and {nanp_after} nan_after after blinkreconstruct. Rejecting"
             pf.valid=False         
         else:
-            if (pf.index==18):
-                print("***************************")
-                print(pf.index,df[f'{config.column}'].max())
             # remove blinks, interpolate, smooth 
             interp_100(config,df, f'{config.column}_rec',f'{config.column}_rec_interp',f'{config.column}_rec_interp_100')  
-            print("_rec",pf.index,df[f'{config.column}_rec'].max())
-            print("_rec_interp",pf.index,df[f'{config.column}_rec_interp'].max())
 
             df[f"{config.column}_original"]=df[f"{config.column}"]
             df[f"{config.column}"]=df[f"{config.column}_rec_interp_100"]
             
             # Create a baseline column for config.column.
             (pf.baseline_mean,pf.baseline_std)=create_baseline_column(df, f'{config.column}', f'{config.column}_baseline')
-            print(pf.index,df[f'{config.column}'].max())
             if math.isnan(pf.baseline_mean):
                 pf.valid=False
                 pf.remark="baseline is nan. Check length of df.loc[df['label'] == 1]"
