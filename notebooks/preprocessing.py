@@ -127,7 +127,7 @@ def interp_100(config:ProcessConfig, eye, col_in, col_interp, col_out, window_si
     99: True  # Specify the index of the data frame you want to plot
 }
     col=config.column
-    eye[f'{col_interp}']=eye[f'{col_in}'].interpolate(method='cubic')
+    eye[f'{col_interp}']=eye[f'{col_in}'].interpolate(method='linear')
     # Use moving average + recenter as low pass.
     eye[f'{col_out}']=eye[f'{col_interp}'].rolling(window=window_size).mean().shift(-window_size//2)
     
@@ -234,15 +234,18 @@ def process(config:ProcessConfig,progress):
         df_sliced['pupil_timestamp_based']=based_timestamps
         
         nan_percent=compute_and_reject_noise(df_sliced,config.noise_threshold_factor,f"{config.column}",f"{config.column}_gated")
+        
         if (nan_percent > config.noise_rejection_percent): 
             pf.remark=f"measurement @{annotation_timestamp} has {nan_percent}% noise data. Rejecting"
             good_bad.append((subject_id,annotation_timestamp,nan_percent,False))
             pf.valid=False
             pf.data=None
         else:
+            # df_sliced[f"{config.column}"]=df_sliced[f"{config.column}_gated"]
             good_bad.append((subject_id,annotation_timestamp,nan_percent,True))
             pf.valid=True
             pf.data=df_sliced
+            
             
         result.frames.append(pf)
         
@@ -302,14 +305,20 @@ def process(config:ProcessConfig,progress):
             pf.remark=f"measurement @{pf.annotation_ts} has {nanp_before} nan_before and {nanp_after} nan_after after blinkreconstruct. Rejecting"
             pf.valid=False         
         else:
+            if (pf.index==18):
+                print("***************************")
+                print(pf.index,df[f'{config.column}'].max())
             # remove blinks, interpolate, smooth 
             interp_100(config,df, f'{config.column}_rec',f'{config.column}_rec_interp',f'{config.column}_rec_interp_100')  
+            print("_rec",pf.index,df[f'{config.column}_rec'].max())
+            print("_rec_interp",pf.index,df[f'{config.column}_rec_interp'].max())
 
             df[f"{config.column}_original"]=df[f"{config.column}"]
             df[f"{config.column}"]=df[f"{config.column}_rec_interp_100"]
             
             # Create a baseline column for config.column.
             (pf.baseline_mean,pf.baseline_std)=create_baseline_column(df, f'{config.column}', f'{config.column}_baseline')
+            print(pf.index,df[f'{config.column}'].max())
             if math.isnan(pf.baseline_mean):
                 pf.valid=False
                 pf.remark="baseline is nan. Check length of df.loc[df['label'] == 1]"
