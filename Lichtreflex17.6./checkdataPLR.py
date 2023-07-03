@@ -21,8 +21,10 @@ def create_process_data_config(eyenum,column,subject_id,data_path):
     (timebase,cond)=get_condition(subject_id)
     config.condition=cond
     
-    if config.column=="diameter_3d": 
+    if config.column=="diameter_3d":
+        pass
     elif column=="diameter": 
+        pass
     else: 
         raise ValueError("column")
     return config
