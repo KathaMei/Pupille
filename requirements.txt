@@ -6,4 +6,3 @@ pyplr
 neurokit2
 fastnumbers
 datamatrix
-ipympl

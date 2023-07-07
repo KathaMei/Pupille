@@ -30,6 +30,20 @@ class ProcessConfigPLR:
     upper_threshold:float=0 #upper diameter threshold, different for diameter (pixel) and diameter_3d (mm)
     diameter_threshold:float=0 #lower diameter threshold, different for diameter (pixel) and diameter_3d (mm)
 
+@dataclass
+class ProcessFrame:
+    annotation_ts:float=None
+    valid:bool=True
+    stage:str=""
+    remark:str=""
+    data:pd.DataFrame=None
+    
+@dataclass
+class ProcessResult:
+    config: ProcessConfigPLR=None
+    frames:list[ProcessFrame]=None
+    
+    
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
 def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
@@ -53,7 +67,8 @@ def reconstruct(config:ProcessConfigPLR, eye, window_size=100):
     # Use moving average + recenter as low pass.
     eye[f'{col}_rec_interp_100']=eye[f'{col}_rec_interp'].rolling(window=window_size).mean().shift(-window_size//2)
 
-def process(eyenum,column,subject_id,condition,timebase,rec_dir,progress):
+    
+def progress(eyenum,column,subject_id,condition,timebase,rec_dir,progress):
     import preprocessing
     config=ProcessConfigPLR()
     config.eyenum=eyenum
@@ -61,7 +76,7 @@ def process(eyenum,column,subject_id,condition,timebase,rec_dir,progress):
     config.subject_id=subject_id
     config.condition=condition
     config.timebase=timebase
-    config.data_dir=rec_dir
+    config.rec_dir=rec_dir
     
     if config.column=="diameter_3d": 
         config.sfactor=50
@@ -85,11 +100,24 @@ def process(eyenum,column,subject_id,condition,timebase,rec_dir,progress):
         raise ValueError("timebase")
     return preprocessing.process2(config,progress)
 
+
+def process(config:ProcessConfigPLR,progress):
+    progress("Starting process2")
+
+    result=ProcessResult()
+    result.config=config
+    result.frames=[]
+    
+    subject_id = config.subject_id    
+    stimulation_condition = config.condition
+    
+    measurement_path=f"{config.data_path}/{config.subject_id[:4]}/{config.subject_id}"
+   
+
 # Load the data from the pupil player
 # Pupil Labs recording directory
 
 # define the patient ID for the dataframe and assign the 4 light strenghts
-
 
 Light_strenght_1 = 1
 Light_strenght_2 = 2
@@ -105,14 +133,15 @@ use_cols = ['confidence',
             'diameter_3d',
             'diameter']
 
+rec_dir = '/Users/Katharina/Desktop/Beispieldaten/PJ04/PJ04_A_PLR2/'
 # Get a handle on a subject
 s = utils.new_subject(
-    rec_dir=config.data_dir, export='000')
+    rec_dir, export='000')
 
 # Load pupil data, method has to be changed to '3d' otherwise multiple repeat error
 #eye_id=best takes the eye with the best confidence, eye_id=0 takes right, 1 takes left
 samples = utils.load_pupil(
-    s['data_dir'], eye_id=config.eyenum, method=config.column, cols=use_cols)
+    rec_dir, eye_id='best', method='3d', cols=use_cols)
 samples
 
 #get rid of the blink artefacts and plot the pupil diameter over time 
@@ -128,18 +157,21 @@ pupil_cols = ['diameter_3d', 'diameter']
 # Make figure for processing, append figure to pupil_preprocessing
 f, axs = graphing.pupil_preprocessing_figure(nrows=5, subject='Example')
 
-# Plot the raw data
 samples[pupil_cols].plot(title='Raw', ax=axs[0], legend=True)
-axs[0].legend(loc='center right', labels=['mm', 'pixels'])
+
+
+# Plot the raw data
+#samples[pupil_cols].plot(title='Raw', ax=axs[0], legend=True)
+#axs[0].legend(loc='center right', labels=['mm', 'pixels'])
 
 # Mask first derivative
 #Default is a threshold of 3 SD from the mean first derivate
 # If there are a lot of blinks the mean first derivate is higher
 # Therefore set the threshold lower 
-samples = preproc.mask_pupil_first_derivative(
-    samples, threshold=3.0, mask_cols=pupil_cols)
-samples[pupil_cols].plot(
-    title='Masked 1st deriv (3*SD)', ax=axs[1], legend=False)
+#samples = preproc.mask_pupil_first_derivative(
+#    samples, threshold=3.0, mask_cols=pupil_cols)
+#samples[pupil_cols].plot(
+#    title='Masked 1st deriv (3*SD)', ax=axs[1], legend=False)
 
 # Mask confidence
 samples = preproc.mask_pupil_confidence(
@@ -149,24 +181,24 @@ samples[pupil_cols].plot(
  
 
 # Apply z-score filter to diameter_3d column
-diameter_zscore = (samples['diameter'] - samples['diameter'].mean()) / samples['diameter'].std()
-zscore_threshold = 3
-samples = samples[abs(diameter_zscore) <= zscore_threshold]
+#diameter_zscore = (samples['diameter'] - samples['diameter'].mean()) / samples['diameter'].std()
+#zscore_threshold = 3
+#samples = samples[abs(diameter_zscore) <= zscore_threshold]
 
 
 # Interpolate
-samples = preproc.interpolate_pupil(
-    samples, interp_cols=pupil_cols)
-samples[pupil_cols].plot(
-    title='Linear interpolation', ax=axs[3], legend=False)
+#samples = preproc.interpolate_pupil(
+#    samples, interp_cols=pupil_cols)
+#samples[pupil_cols].plot(
+#    title='Linear interpolation', ax=axs[3], legend=False)
 
 # Smooth
-samples = preproc.butterworth_series(
-    samples, fields=pupil_cols, filt_order=3,
-    cutoff_freq=4/(SAMPLE_RATE/2))
-samples[pupil_cols].plot(
-    title='3rd order Butterworth filter with 4 Hz cut-off',
-    ax=axs[4], legend=False);
+#samples = preproc.butterworth_series(
+#    samples, fields=pupil_cols, filt_order=3,
+#    cutoff_freq=4/(SAMPLE_RATE/2))
+#samples[pupil_cols].plot(
+#    title='3rd order Butterworth filter with 4 Hz cut-off',
+#    ax=axs[4], legend=False);
 
 events = utils.load_annotations(s['data_dir'])
 events

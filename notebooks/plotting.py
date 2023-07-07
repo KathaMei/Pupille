@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 def plot_preprocessed(df,title,ts_name,col_name):
     # Extract the timestamp and diameter data from the dataframe
-    ts=df['pupil_timestamp'].iloc[0]
     pupil_timestamp = df[ts_name]
     diameter = df[col_name]
 
@@ -23,30 +22,16 @@ def plot_preprocessed(df,title,ts_name,col_name):
     pupil_timestamp_pre = df[ts_name]
     diameter_pre = df[col_name]
 
-    if 'label' in df.columns: 
-        # Plot the data after preprocessing in the right subplot
-        label1 = df[df['label']==1]
-        label2 = df[df['label']==2]
-        label3 = df[df['label']==3]
+    # Plot the data after preprocessing in the right subplot
+    label1 = df[df['label']==1]
+    label2 = df[df['label']==2]
+    label3 = df[df['label']==3]
 
-        ax2.plot(label1[ts_name], label1[col_name], color='red', label='label 1')
-        ax2.plot(label2[ts_name], label2[col_name], color='blue', label='label 2')
-        ax2.plot(label3[ts_name], label3[col_name], color='green', label='label 3')
-    else:
-        ax2.plot(df[ts_name], df[col_name], color='black', label='data')
-        
+    ax2.plot(label1[ts_name], label1[col_name], color='red', label='label 1')
+    ax2.plot(label2[ts_name], label2[col_name], color='blue', label='label 2')
+    ax2.plot(label3[ts_name], label3[col_name], color='green', label='label 3')
                          
     # Plot the data after preprocessing in the right subplot
     ax2.set_title(title)
     ax2.set_xlabel("Pupil Timestamp")
     ax2.set_ylabel("Diameter in mm/pixels")
-
-
-#def baseline_histogram(df, title, col_in):
-#    baseline_means = df[col_in].values  # Retrieve baseline means from the specified column
-    # Plot histogram of baseline means
- #   plt.hist(baseline_means, bins=10)  # Adjust the number of bins as desired
- #   plt.xlabel('Pupil Timestamp Based')
- #   plt.ylabel('Baseline Mean')
-  #  plt.title(title)
-  #  plt.show()

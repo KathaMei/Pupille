@@ -32,11 +32,11 @@ def load_df(path, usecols):
     return df
 
 def prepare(data_dir,subject_id,eye_id, config:DataConfig):
-    csv_cols = ['pupil_timestamp', 'diameter_3d', 'diameter','eye_id','confidence']
+    csv_cols = ['pupil_timestamp', 'diameter_3d', 'diameter','eye_id','confidence',"method"]
     df=load_df(f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv", csv_cols)
     # df = pd.read_csv(f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv", index_col=False, usecols=csv_cols)
     # add moving average for the whole dataset
-    df['diameter_100']=df['diameter'].rolling(window=100).mean()
+    #df['diameter_100']=df['diameter'].rolling(window=100).mean()
     annotation_timestamps = np.load(f"{data_dir}/{subject_id[:4]}/{subject_id}/annotation_timestamps.npy")
     res=[]
     for annotation_timestamp in annotation_timestamps:

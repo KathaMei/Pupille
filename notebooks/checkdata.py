@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import logging as log
 from dataclasses import dataclass
-import sys
 
 @dataclass 
 class DataConfig: 
