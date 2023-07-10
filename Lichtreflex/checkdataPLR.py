@@ -32,12 +32,15 @@ def load_df(path, usecols):
     return df
 
 def prepare(data_dir,subject_id,eye_id, config:DataConfig):
-    csv_cols = ['pupil_timestamp', 'diameter_3d', 'diameter','eye_id','confidence']
-    df=load_df(f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv", csv_cols)
+    csv_cols = ['pupil_timestamp', 'diameter_3d', 'diameter','eye_id','confidence',"method"]
+    
+    pos_file=f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv"    
+    annotation_file=f"{data_dir}/{subject_id[:4]}/{subject_id}/annotation_timestamps.npy"
+    df=load_df(pos_file, csv_cols)
     # df = pd.read_csv(f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv", index_col=False, usecols=csv_cols)
     # add moving average for the whole dataset
-    df['diameter_100']=df['diameter'].rolling(window=100).mean()
-    annotation_timestamps = np.load(f"{data_dir}/{subject_id[:4]}/{subject_id}/annotation_timestamps.npy")
+    #df['diameter_100']=df['diameter'].rolling(window=100).mean()
+    annotation_timestamps = np.load(annotation_file)
     res=[]
     for annotation_timestamp in annotation_timestamps:
         # Calculate the start and end timestamps for the window after the annotation
@@ -53,7 +56,7 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
         df_sliced['rowid'] = range(len(df_sliced)) 
         df_sliced['timeslot'] = df_sliced['rowid'] // 1000
         res.append(df_sliced)        
-    return res
+    return (res,pos_file,annotation_file)
 
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
