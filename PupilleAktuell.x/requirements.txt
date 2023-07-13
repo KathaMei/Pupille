@@ -1,8 +1,0 @@
-pandas
-matplotlib
-jupyterlab
-datamatrix
-pyplr
-neurokit2
-fastnumbers
-datamatrix
