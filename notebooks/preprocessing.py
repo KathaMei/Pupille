@@ -319,6 +319,12 @@ def process(config:ProcessConfig,progress):
         pf.data=df
         
         
+        #diameter_original = Rohdaten
+        #diameter_interp = Interpolarisation, um fehlende Werte zu verhindern, da sonst Funktion nicht ausführbar ist
+        #diameter_rec = entfernte Blinzler
+        #diameter_rec_interp = Interpolarisation nach Entfernung der Blinzler
+        #diameter_rec_interp_100 = low pass filter, moving average über 100 Werte zum Smoothem
+        
     # ------------------------------------------------------------------------------------------------
 
 # Store the original unprocessed dataframe in a new variable
