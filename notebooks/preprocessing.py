@@ -62,24 +62,17 @@ class ProcessResult:
     percentage_valid:int=0
 
 def save_pickle(filename,obj):
-    import pickle
-    with open(filename,"wb") as h: 
-        pickle.dump(obj,h,protocol=5)
+    import pup_util
+    return pup_util.save_pickle(filename,obj)
         
 def load_pickle(filename):
-    import pickle
-    with open(filename,"rb") as h:
-        return pickle.load(h)
+    import pup_util
+    return pup_util.load_pickle(filename,obj)
    
-
 #Return condition for randomized condition code of subject
 def get_condition(subject_id):
-    f=pd.read_csv('zuordnungen.csv',index_col='proband')
-    prob=subject_id[:4]
-    msr=subject_id[5:6]    
-    q=f.loc[prob][int(msr)-1]
-    names=[("3.4","3.4Stim"),("3.4","3.4Placebo"),("30","30Stim"),("30","30Placebo")]
-    return names[int(q)-1]
+    import pup_util
+    return pup_util.get_condition(subject_id)
     
 # Median Absolute Deviation of series data.
 def mad(col):

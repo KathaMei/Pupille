@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+import lr_preprocessing
+import sys
+
+display=print
+def noprint(*x):
+    pass
+
+def pps(fn, field,eye):
+    import os
+    fn=fn.rstrip("/")
+    d,subject_id=os.path.split(fn)
+    data_dir,_=os.path.split(d)
+    out_dir="./ErgebnissePreprocessing" # ignored, results go into plyplr_analyis
+    config=lr_preprocessing.create_process_config(eye,field,subject_id,data_dir)
+    print(f"processing source={fn}, field={field}, eye={eye}")
+    res=lr_preprocessing.process(config,noprint)
+
+def pp(fn):
+    pps(fn,"diameter",0)
+    pps(fn,"diameter_3d",0)
+    pps(fn,"diameter",1)
+    pps(fn,"diameter_3d",1)
+    
+for d in sys.argv[1:]: 
+    pp(d)
+    
+    
