@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
+import os
 import os.path
 import shutil
 from datetime import datetime
@@ -21,7 +22,8 @@ class ProcessConfig:
     data_dir:str="" #path the data is taken
     subject_id:str="" #subject_id
     condition:str="" #1,2,3 or 4: 30Stim, 30Placebo, 3.4Sham, 3.4Placebo
-
+    out_dir:str=None
+    
 def create_process_config(eyenum,column,subject_id,data_dir):
     config=ProcessConfig()
     config.eyenum=eyenum
@@ -312,9 +314,16 @@ def process(config:ProcessConfig,progress=print):
     df = pd.DataFrame(pyplr_results)
     df["eye_id"] = config.eyenum
     df["method"] = method_key
-    
+    df["condition"]=config.condition
     #always change the directory to what the sample gets saved 
-    outfile=f"{subject['out_dir']}/PLR_{eye_id_key}_{method_key}_results.csv"
+    if config.out_dir!=None: 
+        out_dir=config.out_dir
+    else:
+        out_dir=subject['out_dir']
+    outfile=f"{out_dir}/PLR_{eye_id_key}_{method_key}_results.csv"
+    
+    os.makedirs(out_dir,exist_ok=True)
     df.to_csv(outfile, index=False)
+    
     progress(f'output written to {outfile}')
     # print(df)
