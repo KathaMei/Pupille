@@ -62,7 +62,7 @@ def reconstruct(eye, col_in, col_out, window_size=100):
 
 def process(config:ProcessConfig,progress=print):
     from pyplr import utils
-    from pyplr import graphing
+    #from pyplr import graphing
     from pyplr import preproc
 
         # define the patient ID for the dataframe and assign the 4 light strenghts
@@ -110,40 +110,39 @@ def process(config:ProcessConfig,progress=print):
     subject_id=config.subject_id
     
     # Make figure for processing, append figure to pupil_preprocessing
-    f, axs = graphing.pupil_preprocessing_figure(nrows=5, subject=f"{subject_id}" )
+    #f, axs = graphing.pupil_preprocessing_figure(nrows=5, subject=f"{subject_id}" )
     # Plot the raw data
     # Plot the raw data
-    samples[pupil_cols].plot(title=f"{subject_id}_left_2d", ax=axs[0], legend=True)
-    axs[0].legend(loc='center right', labels=['pixels'])
+    #samples[pupil_cols].plot(title=f"{subject_id}_left_2d", ax=axs[0], legend=True)
+    #axs[0].legend(loc='center right', labels=['pixels'])
     # Mask first derivative
     #Default is a threshold of 3 SD from the mean first derivate
     # If there are a lot of blinks the mean first derivate is higher
     # Therefore set the threshold lower 
-    samples = preproc.mask_pupil_first_derivative(
-        samples, threshold=3.0, mask_cols=pupil_cols)
-    samples[pupil_cols].plot(
-        title='Masked 1st deriv (3*SD)', ax=axs[1], legend=False)
+    #samples = preproc.mask_pupil_first_derivative(
+        #samples, threshold=3.0, mask_cols=pupil_cols)
+    #samples[pupil_cols].plot(
+       # title='Masked 1st deriv (3*SD)', ax=axs[1], legend=False)
     
     # Mask confidence
-    samples = preproc.mask_pupil_confidence(
-        samples, threshold=0.8, mask_cols=pupil_cols)
-    samples[pupil_cols].plot(
-        title='Masked confidence (<0.8)', ax=axs[2], legend=False)
-     
-    
+    #samples = preproc.mask_pupil_confidence(
+    #    samples, threshold=0.8, mask_cols=pupil_cols)
+    #samples[pupil_cols].plot(
+    #   title='Masked confidence (<0.8)', ax=axs[2], legend=False)
+
     # Interpolate
-    samples = preproc.interpolate_pupil(
-        samples, interp_cols=pupil_cols)
-    samples[pupil_cols].plot(
-        title='Linear interpolation', ax=axs[3], legend=False)
+    #samples = preproc.interpolate_pupil(
+    #    samples, interp_cols=pupil_cols)
+    #samples[pupil_cols].plot(
+    #    title='Linear interpolation', ax=axs[3], legend=False)
     
     # Smooth
     samples = preproc.butterworth_series(
         samples, fields=pupil_cols, filt_order=3,
         cutoff_freq=4/(SAMPLE_RATE/2))
-    samples[pupil_cols].plot(
-        title='3rd order Butterworth filter with 4 Hz cut-off',
-        ax=axs[4], legend=False);
+    #samples[pupil_cols].plot(
+    #    title='3rd order Butterworth filter with 4 Hz cut-off',
+     #   ax=axs[4], legend=False);
     
     events = utils.load_annotations(s['data_dir'])
     progress(events)
@@ -196,10 +195,10 @@ def process(config:ProcessConfig,progress=print):
     
     
     #plot graphs for vel = velocity in green, acc = acceleration in red and parameters
-    fig1 = plr1.plot(vel=True, acc=True, print_params=True)
-    fig2 = plr2.plot(vel=True, acc=True, print_params=True)
-    fig3 = plr3.plot(vel=True, acc=True, print_params=True)
-    fig4 = plr4.plot(vel=True, acc=True, print_params=True)
+    fig1 = plr1.plot(vel=True, acc=True, print_params=False)
+    fig2 = plr2.plot(vel=True, acc=True, print_params=False)
+    fig3 = plr3.plot(vel=True, acc=True, print_params=False)
+    fig4 = plr4.plot(vel=True, acc=True, print_params=False)
     
     params1 = plr1.parameters()
     params1
