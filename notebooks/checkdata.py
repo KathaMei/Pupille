@@ -10,6 +10,14 @@ class DataConfig:
     window_duration:float=30
 
 def plot(df, title):
+        '''
+        Plottet den Dataframe auf eine spezifische, noch undokumentierte Weise. 
+
+        Parameter
+        ---------
+          df:    Der Dataframe, der geplottet werden soll. 
+          title: Der Titel für den Plot.
+        '''
         fig, ax = plt.subplots(2,2)
         ax[0,0].set_title(title)
         sub=df.plot(ax=ax[0,0],x='pupil_timestamp', y='diameter', kind='line')
@@ -60,6 +68,11 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
 # blinkreconstruct for a pandas series. Returns a numpy array.
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
 def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
+    '''
+    blinkreconstruct for a pandas series. Returns a numpy array.
+    see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
+    '''
+    
     display(type(df))
     import datamatrix
     import datamatrix.series

@@ -67,7 +67,7 @@ def save_pickle(filename,obj):
         
 def load_pickle(filename):
     import pup_util
-    return pup_util.load_pickle(filename,obj)
+    return pup_util.load_pickle(filename)
    
 #Return condition for randomized condition code of subject
 def get_condition(subject_id):
