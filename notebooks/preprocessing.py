@@ -630,7 +630,7 @@ The interp_100 function was applied to the data of the remaining frames. The res
 
 def average_frames_by_binning(pr:ProcessResult, field:str, interval_ms=10)->pd.DataFrame:
     '''
-    Function to average the values of the remaining valid frames. First the valid frames are concatenated into one dataframe and the baseline values are removed. Then a new timestamp column is created. It contains quantized timestamps based on the provided 'interval_ms'. The quantizied timestamps are calculated by rounding the values in the 'pupil_timestamp_based' column to the nearest multiple of the 'interval_ms' and converting it back to seconds. The data is grouped by the new timestamp column and the mean of values in the field column is calculated. After the grouping, the index of the resulting df is resetted. It returns the dataframe av_df with averaged data based on the quantized timestamps.
+    Function to average the values of the remaining valid frames. First the valid frames are concatenated into one dataframe and the baseline values are removed. Then a new timestamp column is created. It contains quantized timestamps based on the provided 'interval_ms'. The quantizied timestamps are calculated by rounding the values in the 'pupil_timestamp_based' column to the nearest multiple of the 'interval_ms' and converting it back to seconds. The data is grouped by the new timestamp column and the mean of values in the field column is calculated. After the grouping, the index of the resulting df is resetted. It returns the dataframe av_df with averaged data based on the quantized timestamps or `None` if pr.frame does not contain any valid dataframes.
     
     parameter
     ---------
@@ -640,6 +640,8 @@ def average_frames_by_binning(pr:ProcessResult, field:str, interval_ms=10)->pd.D
     '''
     # all the valid frames
     valids=[f.data for f in pr.frames if f.valid]
+    if len(valids)==0:
+        return None
     df=pd.concat(valids)
     # remove baseline values
     df=df.loc[df.label!=1,['pupil_timestamp_based',field,'label']]
