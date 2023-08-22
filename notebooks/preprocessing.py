@@ -195,14 +195,9 @@ def compute_and_reject_noise(df,thresf,col,col_out):
     nan_pct_grow=nan_pct(df[col_out])-nan_pct(df[col])
     return nan_pct_grow
 
-
-# blinkreconstruct for a pandas series. Returns a numpy array.
-# see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
-def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
     '''
     Blinkreconstruct for a pandas series. Converting the dataframe to a datamatrix series object. The function is invoked with several parameters. Returns suiteable data structure for functions to reconstruct blinks. The blinkreconstruct function is then applied to the prepared data object dm.
     see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
-    
     parameter
     ---------
         df:            Dataframe to which the function is applied.
@@ -216,6 +211,10 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smo
         gap_vt:        Pupil velocity threshold to detect invalid data.
         mode:          The algorithm used for blink reconstruction: original or advanced. Advanced is new and recommended.        
     '''
+    
+# blinkreconstruct for a pandas series. Returns a numpy array.
+# see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
+def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
     import datamatrix
     import datamatrix.series
     import datamatrix.operations
@@ -223,6 +222,10 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smo
     return datamatrix.series.blinkreconstruct(dm,vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode) #apply blinkreconstruct function from Mathot
 
 def reconstruct(config: ProcessConfig, eye, col_in, col_out, window_size=100):
+    interpolated=eye[col_in].interpolate(method='linear')
+    eye[col_out] = blinkreconstruct(interpolated,
+                                    vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
+                                    mode='advanced')
     '''
     Interpolates the data of the selected column of data object eye with method .. and after that applies the blinkreconstruct function to the prepared data object dm. The results are stored in col_out. Only the values of column diameter_3d are interpolated, as they contain less values than column diameter_2d.
     
@@ -234,11 +237,6 @@ def reconstruct(config: ProcessConfig, eye, col_in, col_out, window_size=100):
         col_out:               Computed column after applying the function.
         window_size:           Number of data points used for interpolation.????
     '''
-    interpolated=eye[col_in].interpolate(method='linear')
-    eye[col_out] = blinkreconstruct(interpolated,
-                                    vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
-                                    mode='advanced')
-
     
 def interp_100(config:ProcessConfig, eye, col_in, col_interp, col_out, window_size=100):
     '''

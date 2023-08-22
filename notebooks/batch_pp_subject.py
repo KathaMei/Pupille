@@ -20,7 +20,7 @@ def pps(fn, field,eye):
     fn=fn.rstrip("/")
     d,subject_id=os.path.split(fn)
     data_dir,_=os.path.split(d)
-    out_dir="/Users/Katharina/Desktop/Prüfung2"
+    out_dir="/Users/Katharina/Desktop/PrüfungIntenso"
     #out_dir="./"
     config=preprocessing.create_process_config(eye,field,subject_id,data_dir)
     res=preprocessing.process(config,noprint)    
