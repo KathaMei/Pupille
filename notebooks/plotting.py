@@ -4,6 +4,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def plot_preprocessed(df,title,ts_name,col_name):
+    '''
+    Plotting pupil size data with two subplots side by side. In the left subplot the pupil_timestamps are plotted on the x-axis and the column values on the y-axis. Each data point is marked with a dot, creating a scatter plot. 
+    In the right subplot the preprocessed pupil_timestamps are plotted on the x-axis and the preprocessed column values on the y-axis. If the label column exists in the dataframe, the plots depict the data with different label values as line charts. The column values before the annotation_timestamps are coloured red, during the stimulation are coloured blue and after stimulation are coloured green.
+
+    parameter
+    ---------
+        df:        Dataframe which is plotted. 
+        title:     Title for the plot.
+        ts_name:   Pupil_timestamps used.
+        col_name:  Column name of the pupil size data.
+    '''
     # Extract the timestamp and diameter data from the dataframe
     ts=df['pupil_timestamp'].iloc[0]
     pupil_timestamp = df[ts_name]
@@ -17,7 +28,6 @@ def plot_preprocessed(df,title,ts_name,col_name):
     ax1.set_title(title)
     ax1.set_xlabel("Pupil Timestamp")
     ax1.set_ylabel("Diameter in mm/pixels")
-
 
     # Extract the timestamp and diameter data from the preprocessed dataframe
     pupil_timestamp_pre = df[ts_name]

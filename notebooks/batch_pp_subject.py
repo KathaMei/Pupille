@@ -7,11 +7,20 @@ def noprint(x):
     pass
 
 def pps(fn, field,eye):
+    '''
+    Repeatedly executing functions. Save the results as pickle and csv files.
+
+    parameter
+    ---------
+        fn:    Functions used. Removing /. 
+        field: Diameter or diameter_3d.
+        eye:   Object name.???
+    '''
     import os
     fn=fn.rstrip("/")
     d,subject_id=os.path.split(fn)
     data_dir,_=os.path.split(d)
-    out_dir="/Users/Katharina/Desktop/ErgebnissePreprocessing"
+    out_dir="/Users/Katharina/Desktop/Prüfung2"
     #out_dir="./"
     config=preprocessing.create_process_config(eye,field,subject_id,data_dir)
     res=preprocessing.process(config,noprint)    
@@ -23,6 +32,13 @@ def pps(fn, field,eye):
     av_df.to_csv(csvfn,index_label="recno")
 
 def pp(fn):
+    '''
+    Run the functions for different combinations for field and eye_id.
+
+    parameter
+    ---------
+        fn:    Functions used. 
+    '''
     pps(fn,"diameter",0)
     pps(fn,"diameter_3d",0)
     pps(fn,"diameter",1)

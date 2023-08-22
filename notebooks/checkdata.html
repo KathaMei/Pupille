@@ -1,0 +1,407 @@
+<div id="21d0c832-f1cd-46af-b5ae-e4e4f1bd790f" class="cell markdown">
+<h1
+id="checking-the-application-of-blink-reconstruct-function-to-pupil-size-data">Checking
+the application of blink reconstruct function to pupil size data</h1>
+</div>
+<div id="866de358-f8a7-49f6-91e2-95affc690455" class="cell markdown">
+<h3 id="installation-and-import">Installation and import</h3>
+</div>
+<div id="aa6fbe1d-8cc9-4def-838b-b0ce7fd330bf" class="cell markdown">
+<p>Installation of packages. Import of python libraries and modules.</p>
+</div>
+<div id="f8019230-6650-4b91-8944-a976f5e22610" class="cell code"
+data-execution_count="18" data-tags="[]">
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install pyplr</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install neurokit2</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>sys.path.append(<span class="st">&quot;../Pupillengröße/Skripte/&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging <span class="im">as</span> log</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> checkdata</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> importlib</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> display</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> display_all(df):</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="im">from</span> IPython.display <span class="im">import</span> HTML, display</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    IPython.display(IPython.HTML(df.to_html()))</span></code></pre></div>
+<div class="output stream stdout">
+<pre><code>Requirement already satisfied: pyplr in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (1.0.3)
+Requirement already satisfied: msgpack in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (1.0.5)
+Requirement already satisfied: requests in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (2.31.0)
+Requirement already satisfied: numexpr in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (2.8.4)
+Requirement already satisfied: scipy in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (1.11.1)
+Requirement already satisfied: pyzmq in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (25.1.0)
+Requirement already satisfied: matplotlib in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (3.7.2)
+Requirement already satisfied: numpy in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (1.25.1)
+Requirement already satisfied: seaborn in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (0.12.2)
+Requirement already satisfied: seabreeze in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (2.4.0)
+Requirement already satisfied: tables in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (3.8.0)
+Requirement already satisfied: pandas in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pyplr) (2.0.3)
+Requirement already satisfied: pyparsing&lt;3.1,&gt;=2.3.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;pyplr) (3.0.9)
+Requirement already satisfied: kiwisolver&gt;=1.0.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;pyplr) (1.4.4)
+Requirement already satisfied: fonttools&gt;=4.22.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;pyplr) (4.41.0)
+Requirement already satisfied: contourpy&gt;=1.0.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;pyplr) (1.1.0)
+Requirement already satisfied: pillow&gt;=6.2.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;pyplr) (10.0.0)
+Requirement already satisfied: cycler&gt;=0.10 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;pyplr) (0.11.0)
+Requirement already satisfied: python-dateutil&gt;=2.7 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;pyplr) (2.8.2)
+Requirement already satisfied: packaging&gt;=20.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;pyplr) (23.1)
+Requirement already satisfied: pytz&gt;=2020.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pandas-&gt;pyplr) (2023.3)
+Requirement already satisfied: tzdata&gt;=2022.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pandas-&gt;pyplr) (2023.3)
+Requirement already satisfied: charset-normalizer&lt;4,&gt;=2 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from requests-&gt;pyplr) (3.2.0)
+Requirement already satisfied: urllib3&lt;3,&gt;=1.21.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from requests-&gt;pyplr) (2.0.3)
+Requirement already satisfied: idna&lt;4,&gt;=2.5 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from requests-&gt;pyplr) (3.4)
+Requirement already satisfied: certifi&gt;=2017.4.17 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from requests-&gt;pyplr) (2023.5.7)
+Requirement already satisfied: py-cpuinfo in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from tables-&gt;pyplr) (9.0.0)
+Requirement already satisfied: cython&gt;=0.29.21 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from tables-&gt;pyplr) (3.0.0)
+Requirement already satisfied: blosc2~=2.0.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from tables-&gt;pyplr) (2.0.0)
+Requirement already satisfied: six&gt;=1.5 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from python-dateutil&gt;=2.7-&gt;matplotlib-&gt;pyplr) (1.16.0)
+
+[notice] A new release of pip available: 22.3.1 -&gt; 23.2.1
+[notice] To update, run: pip install --upgrade pip
+Requirement already satisfied: neurokit2 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (0.2.5)
+Requirement already satisfied: scipy in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from neurokit2) (1.11.1)
+Requirement already satisfied: pandas in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from neurokit2) (2.0.3)
+Requirement already satisfied: matplotlib in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from neurokit2) (3.7.2)
+Requirement already satisfied: numpy in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from neurokit2) (1.25.1)
+Requirement already satisfied: scikit-learn&gt;=1.0.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from neurokit2) (1.3.0)
+Requirement already satisfied: joblib&gt;=1.1.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from scikit-learn&gt;=1.0.0-&gt;neurokit2) (1.3.1)
+Requirement already satisfied: threadpoolctl&gt;=2.0.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from scikit-learn&gt;=1.0.0-&gt;neurokit2) (3.2.0)
+Requirement already satisfied: python-dateutil&gt;=2.7 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;neurokit2) (2.8.2)
+Requirement already satisfied: packaging&gt;=20.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;neurokit2) (23.1)
+Requirement already satisfied: contourpy&gt;=1.0.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;neurokit2) (1.1.0)
+Requirement already satisfied: fonttools&gt;=4.22.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;neurokit2) (4.41.0)
+Requirement already satisfied: cycler&gt;=0.10 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;neurokit2) (0.11.0)
+Requirement already satisfied: pyparsing&lt;3.1,&gt;=2.3.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;neurokit2) (3.0.9)
+Requirement already satisfied: kiwisolver&gt;=1.0.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;neurokit2) (1.4.4)
+Requirement already satisfied: pillow&gt;=6.2.0 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from matplotlib-&gt;neurokit2) (10.0.0)
+Requirement already satisfied: tzdata&gt;=2022.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pandas-&gt;neurokit2) (2023.3)
+Requirement already satisfied: pytz&gt;=2020.1 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from pandas-&gt;neurokit2) (2023.3)
+Requirement already satisfied: six&gt;=1.5 in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from python-dateutil&gt;=2.7-&gt;matplotlib-&gt;neurokit2) (1.16.0)
+
+[notice] A new release of pip available: 22.3.1 -&gt; 23.2.1
+[notice] To update, run: pip install --upgrade pip
+</code></pre>
+</div>
+</div>
+<div id="3788620f-9c53-4aac-9e95-537fffdf6e44" class="cell markdown">
+<h3 id="-preparing"><u> Preparing:</u></h3>
+<p>Defining plot variables, subject_id and data_dir. Using the dataclass
+DataConfig of the checkdata module. The data for eyenum 0 and 1 is
+prepared seperatly and two new variables (eye0 and eye1) are created.
+The data is prepared with the function prepare of checkdata module to
+slice the data into separate frames on the basis of
+annotation_timestamps. The results are plotted by using the plot
+function of checkdata module. One line chart and three histograms are
+created. The variable eye0 is displayed.</p>
+</div>
+<div id="dbd7067a-8db7-4343-b857-af593f4ff981" class="cell code"
+data-execution_count="19" data-tags="[]">
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># wenn ich checkpadata.py ändere, muß das Modul neu importiert werden. Das macht reload()</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>importlib.<span class="bu">reload</span>(checkdata)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>plt.rcParams[<span class="st">&#39;figure.figsize&#39;</span>] <span class="op">=</span> [<span class="dv">20</span>, <span class="dv">10</span>]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>plt.rcParams[<span class="st">&#39;figure.dpi&#39;</span>] <span class="op">=</span> <span class="dv">200</span> </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>subject_id<span class="op">=</span><span class="st">&quot;PJ15_1_PLR1&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>data_dir<span class="op">=</span><span class="st">&quot;/Users/Katharina/Desktop/Beispieldaten&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#data_dir=&quot;../data/groesse/3.4Stimulation/&quot;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>config<span class="op">=</span>checkdata.DataConfig(window_duration<span class="op">=</span><span class="dv">90</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>eye0<span class="op">=</span>checkdata.prepare(data_dir,subject_id,<span class="dv">0</span>,config)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>eye1<span class="op">=</span>checkdata.prepare(data_dir,subject_id,<span class="dv">1</span>,config)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>checkdata.plot(eye0[<span class="dv">0</span>],<span class="st">&quot;auge 0 (0)&quot;</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>display(eye0[<span class="dv">0</span>])</span></code></pre></div>
+<div class="output display_data">
+<p><img src="c2171634f5cb43fcd684a395439490b1cbfead9d.png" /></p>
+</div>
+<div class="output display_data">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>pupil_timestamp</th>
+      <th>eye_id</th>
+      <th>confidence</th>
+      <th>diameter</th>
+      <th>diameter_3d</th>
+      <th>diameter_100</th>
+      <th>pupil_timestamp_based</th>
+      <th>rowid</th>
+      <th>timeslot</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>10750</th>
+      <td>27773.394969</td>
+      <td>0</td>
+      <td>0.965048</td>
+      <td>153.545731</td>
+      <td>NaN</td>
+      <td>127.126738</td>
+      <td>0.003254</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>10751</th>
+      <td>27773.394969</td>
+      <td>0</td>
+      <td>0.965048</td>
+      <td>153.522871</td>
+      <td>5.186446</td>
+      <td>127.117531</td>
+      <td>0.003254</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>10754</th>
+      <td>27773.403036</td>
+      <td>0</td>
+      <td>0.950132</td>
+      <td>153.344421</td>
+      <td>NaN</td>
+      <td>127.108182</td>
+      <td>0.011321</td>
+      <td>2</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>10755</th>
+      <td>27773.403036</td>
+      <td>0</td>
+      <td>0.950132</td>
+      <td>153.325403</td>
+      <td>5.179502</td>
+      <td>127.101383</td>
+      <td>0.011321</td>
+      <td>3</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>10758</th>
+      <td>27773.410923</td>
+      <td>0</td>
+      <td>1.000000</td>
+      <td>152.720485</td>
+      <td>5.159230</td>
+      <td>127.088824</td>
+      <td>0.019208</td>
+      <td>4</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>51815</th>
+      <td>27858.998821</td>
+      <td>0</td>
+      <td>1.000000</td>
+      <td>86.531479</td>
+      <td>NaN</td>
+      <td>70.054411</td>
+      <td>85.607106</td>
+      <td>20533</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>51818</th>
+      <td>27859.006871</td>
+      <td>0</td>
+      <td>1.000000</td>
+      <td>86.725915</td>
+      <td>2.932043</td>
+      <td>70.086564</td>
+      <td>85.615156</td>
+      <td>20534</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>51819</th>
+      <td>27859.006871</td>
+      <td>0</td>
+      <td>1.000000</td>
+      <td>86.726234</td>
+      <td>NaN</td>
+      <td>70.102132</td>
+      <td>85.615156</td>
+      <td>20535</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>51822</th>
+      <td>27859.014928</td>
+      <td>0</td>
+      <td>0.924724</td>
+      <td>86.810715</td>
+      <td>NaN</td>
+      <td>70.127477</td>
+      <td>85.623213</td>
+      <td>20536</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>51823</th>
+      <td>27859.014928</td>
+      <td>0</td>
+      <td>0.924724</td>
+      <td>86.807513</td>
+      <td>2.934398</td>
+      <td>70.143325</td>
+      <td>85.623213</td>
+      <td>20537</td>
+      <td>20</td>
+    </tr>
+  </tbody>
+</table>
+<p>20538 rows × 9 columns</p>
+</div>
+</div>
+</div>
+<div id="2966041f-a39a-4a59-9142-583abc8e2daf" class="cell markdown">
+<h2
+id="use-datamatrix-from-pydatamatrixeu-to-detect-and-reconstruct-blinks">Use
+datamatrix from pydatamatrix.eu to detect and reconstruct blinks</h2>
+</div>
+<div id="5ba3a53b-14c8-426c-8341-d678faf3fc18" class="cell markdown">
+<h3 id="installation-and-import">Installation and import</h3>
+</div>
+<div id="86071041-820c-421f-bb41-c53b98652f2a" class="cell markdown">
+<p>Installation of packages. Import of python libraries and modules.</p>
+</div>
+<div id="8035b382-8f40-4949-bdc5-9545cebd3408" class="cell code"
+data-execution_count="20" data-tags="[]">
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install fastnumbers</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install datamatrix</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> datamatrix</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> datamatrix.series</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> datamatrix.operations</span></code></pre></div>
+<div class="output stream stdout">
+<pre><code>Requirement already satisfied: fastnumbers in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (5.0.1)
+
+[notice] A new release of pip available: 22.3.1 -&gt; 23.2.1
+[notice] To update, run: pip install --upgrade pip
+Requirement already satisfied: datamatrix in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (1.0.4)
+Requirement already satisfied: psutil in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from datamatrix) (5.9.5)
+Requirement already satisfied: prettytable in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from datamatrix) (3.8.0)
+Requirement already satisfied: scipy in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from datamatrix) (1.11.1)
+Requirement already satisfied: openpyxl in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from datamatrix) (3.1.2)
+Requirement already satisfied: tomlkit in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from datamatrix) (0.11.8)
+Requirement already satisfied: json-tricks in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from datamatrix) (3.17.1)
+Requirement already satisfied: numpy in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from datamatrix) (1.25.1)
+Requirement already satisfied: et-xmlfile in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from openpyxl-&gt;datamatrix) (1.1.0)
+Requirement already satisfied: wcwidth in /Users/Katharina/Desktop/Pupille/venv/lib/python3.10/site-packages (from prettytable-&gt;datamatrix) (0.2.6)
+
+[notice] A new release of pip available: 22.3.1 -&gt; 23.2.1
+[notice] To update, run: pip install --upgrade pip
+</code></pre>
+</div>
+</div>
+<div id="d1760725-c287-46cb-83f4-6115f91b232d" class="cell markdown">
+<p>The variable eye0 is converted into a data structure called a series
+using the datamatrix library. The data with the series structure is
+plotted.</p>
+</div>
+<div id="d0b75238-190a-4fd7-9ffc-6c8b31f566f6" class="cell code"
+data-execution_count="21" data-tags="[]">
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>dm_eye0_diameter<span class="op">=</span>datamatrix.convert.from_pandas(eye0[<span class="dv">0</span>])[<span class="st">&#39;diameter&#39;</span>]</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>plt.plot(dm_eye0_diameter)</span></code></pre></div>
+<div class="output execute_result" data-execution_count="21">
+<pre><code>[&lt;matplotlib.lines.Line2D at 0x7f8ed62a9c30&gt;]</code></pre>
+</div>
+<div class="output display_data">
+<p><img src="1ecde8d248bfa0c33ec97736d87d6568200d4949.png" /></p>
+</div>
+</div>
+<div id="b5bd0123-2c34-4c96-8b62-8f0ba9f6f78e" class="cell markdown">
+<p>The blinkreconstruct function is then applied to the prepared data
+objectdm_eye0_diameter. The data after the application of the
+blinkreconstruct function is plotted. With the loop it is possible to
+check which parameter values fit best to the data and remove artefacts.
+The results are plotted.</p>
+</div>
+<div id="1270480e-a1a8-43af-9477-3930af08baf8" class="cell code"
+data-execution_count="17" data-tags="[]">
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>dm_eye0_diameter_fixed<span class="op">=</span>datamatrix.series.blinkreconstruct(dm_eye0_diameter, mode<span class="op">=</span><span class="st">&#39;advanced&#39;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>plt.plot(dm_eye0_diameter_fixed)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">type</span>(eye0))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Annahme: eye0 ist eine Liste von Objekten</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> item <span class="kw">in</span> eye0:</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    item[<span class="st">&#39;diameter_rec&#39;</span>] <span class="op">=</span> checkdata.blinkreconstruct(item[<span class="st">&#39;diameter&#39;</span>], vt_start<span class="op">=</span><span class="dv">10</span><span class="op">/</span><span class="dv">800</span>, vt_end<span class="op">=</span><span class="dv">5</span><span class="op">/</span><span class="dv">800</span>, mode<span class="op">=</span><span class="st">&#39;advanced&#39;</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> item <span class="kw">in</span> eye0:</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    diameter <span class="op">=</span> item[<span class="st">&#39;diameter&#39;</span>]</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    diameter_rec <span class="op">=</span> item[<span class="st">&#39;diameter_rec&#39;</span>]</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    pupil_timestamp <span class="op">=</span> item[<span class="st">&#39;pupil_timestamp&#39;</span>]</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Erstelle den Plot für diese Daten</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    plt.figure()</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    plt.plot(pupil_timestamp, diameter, label<span class="op">=</span><span class="st">&#39;Original Diameter&#39;</span>)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    plt.plot(pupil_timestamp, diameter_rec, label<span class="op">=</span><span class="st">&#39;Reconstructed Diameter&#39;</span>)</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    plt.xlabel(<span class="st">&#39;Pupil Timestamp&#39;</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    plt.ylabel(<span class="st">&#39;Diameter&#39;</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    plt.title(<span class="st">&#39;Diameter vs. Pupil Timestamp&#39;</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    plt.legend()</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code></pre></div>
+<div class="output stream stdout">
+<pre><code>&lt;class &#39;list&#39;&gt;
+</code></pre>
+</div>
+<div class="output display_data">
+<pre><code>pandas.core.series.Series</code></pre>
+</div>
+<div class="output display_data">
+<pre><code>pandas.core.series.Series</code></pre>
+</div>
+<div class="output display_data">
+<pre><code>pandas.core.series.Series</code></pre>
+</div>
+<div class="output display_data">
+<pre><code>pandas.core.series.Series</code></pre>
+</div>
+<div class="output display_data">
+<p><img src="578ffdb5248364fdb875248cc4d02019923ffbd4.png" /></p>
+</div>
+<div class="output display_data">
+<p><img src="c84bbcf8134ed6b1d572bf2fdfa074458a5a013e.png" /></p>
+</div>
+<div class="output display_data">
+<p><img src="1e3c0ec86cba0e6649fc7fe149e9e5e819fe2c4e.png" /></p>
+</div>
+<div class="output display_data">
+<p><img src="7ef8cbfacb87268c15034f657ce28805a55f7d39.png" /></p>
+</div>
+<div class="output display_data">
+<p><img src="7e44b11399ff4d0f4b574fc0423922c3d35634d9.png" /></p>
+</div>
+</div>

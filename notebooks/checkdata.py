@@ -11,12 +11,12 @@ class DataConfig:
 
 def plot(df, title):
         '''
-        Plottet den Dataframe auf eine spezifische, noch undokumentierte Weise. 
+        Plotting the dataframe with pupil_timestamps on x-axis and diameter values on y-axis in a line chart fro checkdata notebook. Creating histograms showing the distribution of the variables confidence, diameter and diameter_3d.
 
-        Parameter
+        parameter
         ---------
-          df:    Der Dataframe, der geplottet werden soll. 
-          title: Der Titel für den Plot.
+          df:    Dataframe which is plotted. 
+          title: Title for the plot.
         '''
         fig, ax = plt.subplots(2,2)
         ax[0,0].set_title(title)
@@ -31,6 +31,14 @@ def plot(df, title):
         plt.show()
 
 def load_df(path, usecols):
+    '''
+    Controlling csv dataframe if pickle file already exists. If already created, pickle file is loaded. If no pickle file is found, it is created and the csv dataframe included.
+
+    parameter
+    ---------
+        path:    Path to files which are loaded. 
+        usecols: Columns which are selected.
+    '''
     import os
     import pandas as pd
     if os.path.exists(f"{path}.pickle"):
@@ -41,6 +49,19 @@ def load_df(path, usecols):
     return df
 
 def prepare(data_dir,subject_id,eye_id, config:DataConfig):
+    '''
+    Load dataframes used for the code. Select the important columns. Load the annotation_timestamps and slice the dataframes into replicates. Add a timeslot column.
+
+    ###Add Moving Average???
+    ###only used in ckeckdata notebook
+    
+    parameter
+    ---------
+        data_dir:          Path to files which are loaded. 
+        subject_id:        Subject_id, important for selecting the files.
+        eye_id:            Eye side.
+        config:DataConfig: Selected dataclass.
+    '''
     csv_cols = ['pupil_timestamp', 'diameter_3d', 'diameter','eye_id','confidence']
     df=load_df(f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv", csv_cols)
     # df = pd.read_csv(f"{data_dir}/{subject_id[:4]}/{subject_id}/exports/000/pupil_positions.csv", index_col=False, usecols=csv_cols)
@@ -69,7 +90,7 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
 # see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
 def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
     '''
-    blinkreconstruct for a pandas series. Returns a numpy array.
+    Blinkreconstruct for a pandas series. Returns a numpy array.
     see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
     '''
     
