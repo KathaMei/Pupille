@@ -15,7 +15,20 @@ from typing import List
 import pup_util
 
 @dataclass 
-class ProcessConfig: 
+class ProcessConfig:
+    '''
+    Data class to present attributes used in application.
+
+    attributes
+    ---------
+        eyenum:int:                      Eye side: left (eye1) or right (eye0).
+        column:str:                      Column of pupil size data: diameter or diameter_3d.
+        sfactor:float:                   The factor the velocity (vt) should be divided with to detect blinks in the blinkreconstruct function.
+        data_dir:str:                    File path from which the data is taken.
+        subject_id:str:                  The subject_id contains the subject number and the number of study cycles which is used to select the corresponding condition. 
+        condition:str:                   Stimulation conditionen: 3.4Stim, 30Stim, 3.4Placebo, 30Placebo
+        out_dir:str:                     The output directory.
+    '''
     eyenum:int=0 #eye0 right, eye1 left
     column:str="unknown" #diameter or diameter_3d
     sfactor:float="" #the factor the velocity (vt) should be divided with to detect blinks in the blink_reconstruct
@@ -25,6 +38,16 @@ class ProcessConfig:
     out_dir:str=None
     
 def create_process_config(eyenum,column,subject_id,data_dir):
+    '''
+    Creates a function with values for the attributes of the dataclass ProcessConfing. The values are selected based on column and timebase of the data.
+    
+    parameter
+    ---------
+        eyenum:        Eye side: left (eye1) or right (eye0).
+        column:str:    Selected column to which the function is applied.
+        subject_id:    The subject_id contains the subject number and the number of study cycles which is used to select the corresponding condition.
+        data_path:str: File path from which the data is taken.
+    '''
     config=ProcessConfig()
     config.eyenum=eyenum
     config.column=column
@@ -41,6 +64,22 @@ def create_process_config(eyenum,column,subject_id,data_dir):
     return config
 
 def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=5000, margin=10, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
+    '''
+    Blinkreconstruct for a pandas series. Converting the dataframe to a datamatrix series object. The function is invoked with several parameters. Returns suiteable data structure for functions to reconstruct blinks. The blinkreconstruct function is then applied to the prepared data object dm.
+    see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
+    parameter
+    ---------
+        df:            Dataframe to which the function is applied.
+        vt_start:      Pupil velocity threshold to detect the onset of a blink. 
+        vt_end:        Pupil velocity threshold to detect the offset of a blink.
+        maxdur:        Maximum duration for a blink.
+        margin:        Margin around missing data that is reconstructed.
+        smooth_winlen: The window length that is used to smooth the velocity profile.
+        std_thr:       Threshold for standard deviation when the data is considered invalid.
+        gap_margin:    Margin around missing data that is not reconstructed.
+        gap_vt:        Pupil velocity threshold to detect invalid data.
+        mode:          The algorithm used for blink reconstruction: original or advanced. Advanced is new and recommended.        
+    '''
     import datamatrix
     import datamatrix.series
     import datamatrix.operations
@@ -48,6 +87,17 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=5000, margin=10, sm
     return datamatrix.series.blinkreconstruct(dm, vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode)
 
 def reconstruct(eye, col_in, col_out, window_size=100):
+        '''
+        Applies the blinkreconstruct function to the prepared data object dm. Interpolates the data of the selected column of data object eye with method linear. The results are stored in col_out. 
+        
+        parameter
+        ---------
+            config: ProcessConfig: Use of the attributes defined in dataclass ProcessConfig.
+            eye:                   Selected object to which the function is applied.
+            col_in:                Selected column to which the function is applied.
+            col_out:               Computed column after applying the function.
+            window_size:           Number of data points used for interpolation.????
+        '''
         if col_in==col_out:
             eye[f'{col_in}_original']=eye[col_in]
         # Remove blinks.
@@ -61,11 +111,25 @@ def reconstruct(eye, col_in, col_out, window_size=100):
         eye[col_out]=eye[f'{col_in}_rec_interp']
 
 def process(config:ProcessConfig,progress=print):
+    '''
+    The dataframes are loaded. Various functions are applied to preprocess the data and calculate PLR values.
+    First various variables are assigned and the data loaded.
+    
+    -Light_strength: the intensity of the light the probands were exposed to.
+    -SAMPLE_RATE: The frequency of measurements of the eye tracker.
+
+    Then the reconstruct function is applied and a low pass filter is used to smooth the data. The light reflexes of one dataset are sliced according to the annotation timestamps. The baseline mean is calculated. The class PLR from Github is used to plot the data, calculate parameter values and create csv files with results. 
+
+    parameter
+    ---------
+        config:ProcessConfig: Use of the attributes defined in dataclass ProcessConfig.
+        progress: Written feedback on the progress of the script.
+    '''
     from pyplr import utils
     #from pyplr import graphing
     from pyplr import preproc
-
-        # define the patient ID for the dataframe and assign the 4 light strenghts
+    
+    # define the patient ID for the dataframe and assign the 4 light strenghts
     Light_strenght_1 = 1
     Light_strenght_2 = 2
     Light_strenght_3 = 3
@@ -85,10 +149,14 @@ def process(config:ProcessConfig,progress=print):
 
     rec_dir=f"{config.data_dir}/{config.subject_id[:4]}/{config.subject_id}"
 
+    ####wird gar nicht mehr gemacht???
+    ###
+    ##
     # Check if the pyplr_analysis directory exists
     if not os.path.exists(os.path.join(rec_dir, 'pyplr_analysis')):
         # Create the directory if it doesn't exist
         os.makedirs(os.path.join(rec_dir, 'pyplr_analysis'))
+
     
     # Get a handle on a subject
     subject = utils.new_subject(
@@ -143,7 +211,9 @@ def process(config:ProcessConfig,progress=print):
     #samples[pupil_cols].plot(
     #    title='3rd order Butterworth filter with 4 Hz cut-off',
      #   ax=axs[4], legend=False);
-    
+    '''
+    Annotation timestamps are loaded and the data is sliced into four separate light reflexes. The baseline mean is calculated and the percentage change frame baseline.
+    '''
     events = utils.load_annotations(s['data_dir'])
     progress(events)
 
@@ -179,6 +249,14 @@ def process(config:ProcessConfig,progress=print):
     progress(ranges4)
 
     def get_average_plr(input_range):
+        '''
+        The data class PLR from classPLRfromGithub module is imported. The PLR data is taken to calculate the average PLR for each group in the input data. The data is grouped and the mean is calculated. It is converted to a NumPy array. A PLR object is created containing the average_plr data and relevant characeristics.
+        
+        parameter
+        ---------
+            input_range: The PLR data.
+      
+        '''
         from classPLRfromGitHub import PLR
         average_plr = input_range.groupby(level=0)[config.column].mean().to_numpy()
         return PLR(average_plr,
@@ -192,7 +270,10 @@ def process(config:ProcessConfig,progress=print):
     plr4 = get_average_plr(ranges4)
     
     plr_all = [plr1, plr2, plr3, plr4]
-    
+
+    '''
+    Plot the light reflexes in separate plots, showing the data, the velocitiy and acceleration.
+    '''
     
     #plot graphs for vel = velocity in green, acc = acceleration in red and parameters
     fig1 = plr1.plot(vel=True, acc=True, print_params=False)
@@ -213,6 +294,9 @@ def process(config:ProcessConfig,progress=print):
     params4
 
     def get_pyplr_results(plr):
+        '''
+        Appling the functions to calculate PLR parameters. Create a csv file to store all the values of the parameters for all four light reflexes.
+        '''
     #D1 = baseline pupilsize, in mm
         D1 = plr.baseline()
         progress("D1: ",D1)
@@ -276,7 +360,9 @@ def process(config:ProcessConfig,progress=print):
                 'redil_50': redil_50,
                 'redil_25': redil_25
                 }
-    
+    '''
+    Creates a dictionary to store the calculated vales of the PLR in separate lists.
+    '''
     pyplr_results = {'Subject ID': [subject_id, subject_id, subject_id, subject_id],
                      'D1':[],
                      'D2':[],
@@ -309,7 +395,10 @@ def process(config:ProcessConfig,progress=print):
         pyplr_results["redil_75"].append(pyplr_result["redil_75"])
         pyplr_results["redil_50"].append(pyplr_result["redil_50"])
         pyplr_results["redil_25"].append(pyplr_result["redil_25"])
-        
+    
+    '''
+    Save the results as csv files.
+    '''
     df = pd.DataFrame(pyplr_results)
     df["eye_id"] = config.eyenum
     df["method"] = method_key

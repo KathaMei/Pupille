@@ -7,12 +7,21 @@ def noprint(*x):
     pass
 
 def pps(fn, field,eye):
+    '''
+    Repeatedly executing functions. Save the results as csv files.
+
+    parameter
+    ---------
+        fn:    Functions used. Removing /. 
+        field: Diameter or diameter_3d.
+        eye:   Variable name.
+    '''
     import os
     fn=fn.rstrip("/")
     d,subject_id=os.path.split(fn)
     data_dir,_=os.path.split(d)
     config=lr_preprocessing.create_process_config(eye,field,subject_id,data_dir)
-    config.out_dir=f'/Users/Katharina/Desktop/PLR preprocessed/{subject_id}/'
+    config.out_dir=f'/Users/Katharina/Desktop/PLRPrüfung/{subject_id}/'
     print(f"processing source={fn}, field={field}, eye={eye}")
     res=lr_preprocessing.process(config,noprint)
 

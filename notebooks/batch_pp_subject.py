@@ -14,7 +14,7 @@ def pps(fn, field,eye):
     ---------
         fn:    Functions used. Removing /. 
         field: Diameter or diameter_3d.
-        eye:   Object name.???
+        eye:   Variable name.
     '''
     import os
     fn=fn.rstrip("/")

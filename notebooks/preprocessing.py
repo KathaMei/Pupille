@@ -195,6 +195,10 @@ def compute_and_reject_noise(df,thresf,col,col_out):
     nan_pct_grow=nan_pct(df[col_out])-nan_pct(df[col])
     return nan_pct_grow
 
+    
+# blinkreconstruct for a pandas series. Returns a numpy array.
+# see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
+def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
     '''
     Blinkreconstruct for a pandas series. Converting the dataframe to a datamatrix series object. The function is invoked with several parameters. Returns suiteable data structure for functions to reconstruct blinks. The blinkreconstruct function is then applied to the prepared data object dm.
     see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
@@ -211,10 +215,6 @@ def compute_and_reject_noise(df,thresf,col,col_out):
         gap_vt:        Pupil velocity threshold to detect invalid data.
         mode:          The algorithm used for blink reconstruction: original or advanced. Advanced is new and recommended.        
     '''
-    
-# blinkreconstruct for a pandas series. Returns a numpy array.
-# see https://pydatamatrix.eu/0.15/series/#function-blinkreconstructseries-vt5-vt_start10-vt_end5-maxdur500-margin10-smooth_winlen21-std_thr3-gap_margin20-gap_vt10-modeuoriginal
-def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smooth_winlen=21, std_thr=3, gap_margin=20, gap_vt=10, mode=u'advanced'):
     import datamatrix
     import datamatrix.series
     import datamatrix.operations
@@ -222,12 +222,8 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smo
     return datamatrix.series.blinkreconstruct(dm,vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode) #apply blinkreconstruct function from Mathot
 
 def reconstruct(config: ProcessConfig, eye, col_in, col_out, window_size=100):
-    interpolated=eye[col_in].interpolate(method='linear')
-    eye[col_out] = blinkreconstruct(interpolated,
-                                    vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
-                                    mode='advanced')
     '''
-    Interpolates the data of the selected column of data object eye with method .. and after that applies the blinkreconstruct function to the prepared data object dm. The results are stored in col_out. Only the values of column diameter_3d are interpolated, as they contain less values than column diameter_2d.
+    Interpolates the data of the selected column of data object eye with method linear and after that applies the blinkreconstruct function to the prepared data object dm. The results are stored in col_out. Only the values of column diameter_3d are interpolated, as they contain less values than column diameter_2d.
     
     parameter
     ---------
@@ -237,6 +233,11 @@ def reconstruct(config: ProcessConfig, eye, col_in, col_out, window_size=100):
         col_out:               Computed column after applying the function.
         window_size:           Number of data points used for interpolation.????
     '''
+    interpolated=eye[col_in].interpolate(method='linear')
+    eye[col_out] = blinkreconstruct(interpolated,
+                                    vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
+                                    mode='advanced')
+
     
 def interp_100(config:ProcessConfig, eye, col_in, col_interp, col_out, window_size=100):
     '''
@@ -334,6 +335,14 @@ def process(config:ProcessConfig,progress):
     -stage="zscore"
     -stage="Number of frames under threshold"
     -stage="finished"
+
+    Variable description:
+    -diameter_original = raw data
+    -diameter_interp = interpolated data to remove NaNs in order to use the blink reconstruction
+    -diameter_rec = data with removed blinks
+    -diameter_rec_interp = interpolation after blink removal
+    -diameter_rec_interp_100 = low pass filter, moving average over a window duration of 100, smoothing the data
+    
     
     parameter
     ---------
@@ -492,13 +501,6 @@ def process(config:ProcessConfig,progress):
                 pf.valid=False
                 pf.remark="baseline is nan. Check length of df.loc[df['label'] == 1]"
         pf.data=df
-        
-        
-        #diameter_original = Rohdaten
-        #diameter_interp = Interpolarisation, um fehlende Werte zu verhindern, da sonst Funktion nicht ausführbar ist
-        #diameter_rec = entfernte Blinzler
-        #diameter_rec_interp = Interpolarisation nach Entfernung der Blinzler
-        #diameter_rec_interp_100 = low pass filter, moving average über 100 Werte zum Smoothem
         
     # ------------------------------------------------------------------------------------------------
 

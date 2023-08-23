@@ -53,7 +53,7 @@ def prepare(data_dir,subject_id,eye_id, config:DataConfig):
     Load dataframes used for the code. Select the important columns. Load the annotation_timestamps and slice the dataframes into replicates. Add a timeslot column.
 
     ###Add Moving Average???
-    ###only used in ckeckdata notebook
+    ###only used in checkdata notebook
     
     parameter
     ---------

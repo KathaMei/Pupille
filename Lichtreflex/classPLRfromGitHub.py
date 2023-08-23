@@ -2,20 +2,19 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Apr  6 19:22:31 2023
-
-@author: Katharina
+Used the following script as basis and adapted it to own needs.
+https://github.com/PyPlr/cvd_pupillometry/tree/master/pyplr
 """
-
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import Sequence
 
-
 class PLR:
-    """Class to handle data representing a pupil response to a flash of light."""
-
+    '''
+    Class to handle data representing a pupil response to a flash of light.
+    '''
     # TODO: add time stuff
     def __init__(
         self,
@@ -24,55 +23,64 @@ class PLR:
         onset_idx: int,
         stim_duration: int,
     ) -> None:
-        """Initialise the PLR data.
-        Parameters
+        '''
+        Initialise the PLR data.
+        
+        parameter
         ----------
-        plr : arraylike
-            Data representing a pupil response to a flash of light.
-        sample_rate : int
-            Frequency at which the data were sampled.
-        onset_idx : int
-            Ordinal index matching the onset of the light stimulus.
-        stim_duration : int
-            Duration of the light stimlus in seconds.
-        Returns
+            plr : arraylike
+                Data representing a pupil response to a flash of light.
+            sample_rate : int
+                Frequency at which the data were sampled.
+            onset_idx : int
+                Ordinal index matching the onset of the light stimulus.
+            stim_duration : int
+                Duration of the light stimlus in seconds.
+            Returns
         -------
         None.
-        """
+        '''
         self.plr = plr
         self.sample_rate = sample_rate
         self.onset_idx = onset_idx
         self.stim_duration = stim_duration
 
     def velocity_profile(self) -> np.array:
-        """Return the velocity profile of the PLR. Assumes the samples are
+        '''
+        Return the velocity profile of the PLR. Assumes the samples are
         evenly spaced, which is not the case with Pupil Labs data. Smoothing
         and averaging across multiple PLRs should remove cause for concern.
-        """
+        '''
         t = 1 / self.sample_rate
         return np.diff(self.plr, prepend=np.nan) / t
 
     def acceleration_profile(self) -> np.array:
-        """Return the acceleration profile of a PLR. Assumes the samples are
+        '''
+        Return the acceleration profile of a PLR. Assumes the samples are
         evenly spaced, which is not the case with Pupil Labs data. Smoothing
         and averaging across multiple PLRs should remove cause for concern.
-        """
+        '''
         t = 1 / self.sample_rate
         vel = self.velocity_profile()
         return np.diff(vel, prepend=np.nan) / t
 
     def baseline(self) -> float:
-        """Return the average pupil size between the start of s and onset_idx."""
+        '''
+        Return the average pupil size between the start of s and onset_idx.
+        '''
         return np.mean(self.plr[0 : self.onset_idx])
 
     def pupil_size_at_onset(self) -> float:
-        """Return pupil size at stimulus onset."""
+        '''
+        Return pupil size at stimulus onset.
+        '''
         return self.plr[self.onset_idx]
 
     def latency_idx_a(self) -> int:
-        """Return the index where pupil size passes 1% change from size at
+        '''
+        Return the index where pupil size passes 1% change from size at
         light  onset.
-        """
+        '''
         b = self.pupil_size_at_onset()
         threshold = b - (b * 0.01)
         lidx = np.argmax(self.plr[self.onset_idx :] < threshold)
@@ -80,9 +88,10 @@ class PLR:
         return lidx
 
     def latency_idx_b(self) -> int:
-        """Return the index of peak negative acceleration in the second after
+        '''
+        Return the index of peak negative acceleration in the second after
         light onset.
-        """
+        '''
         acc = self.acceleration_profile()
         lidx = np.argmin(
             acc[self.onset_idx : self.onset_idx + self.sample_rate]
@@ -91,98 +100,122 @@ class PLR:
         return lidx
 
     def latency_to_constriction_a(self) -> float:
-        """Return the time in miliseconds between stimulus onset and the first
+        '''
+        Return the time in miliseconds between stimulus onset and the first
         sample where constriction exceeds a percentage of the baseline, using
         the percent change threshold.
-        """
+        '''
         lidx = self.latency_idx_a()
         return (lidx - self.onset_idx) * (1 / self.sample_rate)
 
     def latency_to_constriction_b(self) -> float:
-        """Return the time in miliseconds between stimulus onset and the time
+        '''
+        Return the time in miliseconds between stimulus onset and the time
         at which the pupil reaches maximal negative acceleration within a
         1-s window. See Bergamin & Kardon (2003) for justification. Requires
         well-smoothed pupil data.
-        """
+        '''
         lidx = self.latency_idx_b()
         return (lidx - self.onset_idx) * (1 / self.sample_rate)
 
     def time_to_max_constriction(self) -> float:
-        """Return the time in miliseconds between stimulus onset and the peak
+        '''
+        Return the time in miliseconds between stimulus onset and the peak
         of pupil constriction.
-        """
+        '''
         return np.argmin(self.plr[self.onset_idx :]) * (1 / self.sample_rate)
 
     def time_to_max_velocity(self) -> float:
-        """Return the time between stimulus onset and when pupil constriction
+        '''
+        Return the time between stimulus onset and when pupil constriction
         reaches maximum velocity.
-        """
+        '''
         vel = self.velocity_profile()
         return np.argmin(vel[self.onset_idx :]) * (1 / self.sample_rate)
 
     def peak_constriction_idx(self) -> int:
-        """Return the index of the sample with peak constriction."""
+        '''
+        Return the index of the sample with peak constriction.
+        '''
         return np.argmin(self.plr)
 
     def peak_constriction(self) -> float:
-        """Return the peak constriction value (i.e., the smallest pupil size)."""
+        '''
+        Return the peak constriction value (i.e., the smallest pupil size).
+        '''
         return np.min(self.plr)
 
     def constriction_amplitude(self) -> float:
-        """Return the constriction amplitude (i.e. the absolute difference
+        '''
+        Return the constriction amplitude (i.e. the absolute difference
         between baseline and peak constriction).
-        """
+        '''
         peak = self.peak_constriction()
         base = self.baseline()
         return abs(peak - base)
 
     def average_constriction_velocity(self) -> float:
-        """Return the average constriction velocity."""
+        '''
+        Return the average constriction velocity.
+        '''
         vel = self.velocity_profile()
         lidx = self.latency_idx_a()
         pidx = self.peak_constriction_idx()
         return np.mean(abs(vel[lidx:pidx]))
 
     def max_constriction_velocity(self) -> float:
-        """Return the maximum constriction velocity."""
+        '''
+        Return the maximum constriction velocity.
+        '''
         vel = self.velocity_profile()
         pidx = self.peak_constriction_idx()
         return np.max(abs(vel[self.onset_idx : pidx]))
 
     def max_constriction_acceleration(self) -> float:
-        """Return the maximum constriction acceleration."""
+        '''
+        Return the maximum constriction acceleration.
+        '''
         acc = self.acceleration_profile()
         pidx = self.peak_constriction_idx()
         return np.max(abs(acc[self.onset_idx : pidx]))
 
     def constriction_time(self) -> float:
-        """Return the time difference between constriction latency and peak
+        '''
+        Return the time difference between constriction latency and peak
         constriction.
-        """
+        '''
         lat = self.latency_to_constriction_a()
         ttmc = self.time_to_max_constriction()
         return ttmc - lat
 
     def average_redilation_velocity(self) -> float:
-        """Return the average redilation velocity"""
+        '''
+        Return the average redilation velocity.
+        '''
         vel = self.velocity_profile()
         pidx = self.peak_constriction_idx()
         return np.mean(abs(vel[pidx:]))
 
     def max_redilation_velocity(self) -> float:
-        """Return the maximum redilation velocity."""
+        '''
+        Return the maximum redilation velocity.
+        '''
         vel = self.velocity_profile()
         pidx = self.peak_constriction_idx()
         return np.max(abs(vel[pidx:]))
 
     def max_redilation_acceleration(self) -> float:
-        """Return the maximum redilation acceleration."""
+        '''
+        Return the maximum redilation acceleration.
+        '''
         acc = self.acceleration_profile()
         pidx = self.peak_constriction_idx()
         return np.max(abs(acc[pidx:]))
 
     def time_to_75pc_recovery(self) -> float:
-        """Return the time in ms until 75% recovery from baseline."""
+        '''
+        Return the time in ms until 75% recovery from baseline.
+        '''
         base = self.baseline()
         pidx = self.peak_constriction_idx()
         amp = self.constriction_amplitude()
@@ -191,12 +224,18 @@ class PLR:
         )
     
     def time_to_50pc_recovery(self) -> float:
+        '''
+        Return the time in ms until 50% recovery from baseline.
+        '''
         base = self.baseline()
         pidx = self.peak_constriction_idx()
         amp = self.constriction_amplitude()
         return np.argmax(self.plr[pidx:] > base - (amp / 2)) * (1 / self.sample_rate)
     
     def time_to_25pc_recovery(self) -> float:
+        '''
+        Return the time in ms until 25% recovery from baseline.
+        '''
         base = self.baseline()
         pidx = self.peak_constriction_idx()
         amp = self.constriction_amplitude()
@@ -205,20 +244,22 @@ class PLR:
 
 
     def parameters(self) -> pd.DataFrame:
-        """Collapse a PLR into descriptive parameters.
-        Parameters
+        '''
+        Collapse a PLR into descriptive parameters.
+        
+        parameter
         ----------
-        plr : array-like
-            Data representing a pupil's response to light in mm units.
-        sample_rate : int
-            sampling rate of the measurement system.
-        onset_idx : int
-            index of the onset of the light stimulus.
-        Returns
+            plr : array-like
+                Data representing a pupil's response to light in mm units.
+            sample_rate : int
+                sampling rate of the measurement system.
+            onset_idx : int
+                index of the onset of the light stimulus.
+            Returns
         -------
         params : pd.DataFrame
             DataFrame containins the params.
-        """
+        '''
 
         params = {
             "Baseline": self.baseline(),
@@ -246,21 +287,24 @@ class PLR:
     def plot(
         self, vel: bool = True, acc: bool = True, print_params: bool = True
     ) -> plt.Figure:
-        """Plot a PLR with option to add descriptive parameters and velocity /
+        '''
+        Plot a PLR with option to add descriptive parameters and velocity /
         acceleration profiles.
-        Parameters
+        
+        parameters
         ----------
-        vel_acc : bool, optional
-            Whether to also plot the velocity and acceleration profiles.
-            The default is False.
-        print_params : bool, optional
-            Whether to annotate the axis with the results of a call to
-            `.parameters(...)`. The default is True.
-        Returns
+            vel_acc : bool, optional
+                Whether to also plot the velocity and acceleration profiles.
+                The default is False.
+            print_params : bool, optional
+                Whether to annotate the axis with the results of a call to
+                `.parameters(...)`. The default is True.
+            Returns
         -------
         fig : matplotlib.figure.Figure
             The plot.
-        """
+        '''
+
         t_max = len(self.plr) / self.sample_rate
         time = np.linspace(0, t_max, num=len(self.plr)) - (
             self.onset_idx / self.sample_rate
