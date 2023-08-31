@@ -18,14 +18,17 @@ def pps(fn, field,eye):
         field: Diameter or diameter_3d.
         eye:   Variable name.
     '''
-    import os
-    fn=fn.rstrip("/")
-    d,subject_id=os.path.split(fn)
-    data_dir,_=os.path.split(d)
-    config=lr_preprocessing.create_process_config(eye,field,subject_id,data_dir)
-    config.out_dir=f'/Users/Katharina/Desktop/PLRPrüfung/{subject_id}/'
-    print(f"processing source={fn}, field={field}, eye={eye}")
-    res=lr_preprocessing.process(config,noprint)
+    try:
+        import os
+        fn=fn.rstrip("/")
+        d,subject_id=os.path.split(fn)
+        data_dir,_=os.path.split(d)
+        config=lr_preprocessing.create_process_config(eye,field,subject_id,data_dir)
+        config.out_dir=f'/Users/Katharina/Desktop/PLRPrüfung/{subject_id}/'
+        print(f"processing source={fn}, field={field}, eye={eye}")
+        res=lr_preprocessing.process(config,noprint)
+    except Exception as ex: 
+        print(f"ERROR: processing of file {fn} failed with exception {type(ex)}{ex}",file=sys.stderr)
 
 def pp(fn):
     pps(fn,"diameter",0)
