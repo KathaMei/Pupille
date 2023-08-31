@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import lr_preprocessing
 import sys
+print(sys.path)
+sys.path.append("../Pupillengröße/Skripte/")
 
 display=print
 def noprint(*x):
