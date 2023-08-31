@@ -220,6 +220,7 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=800, margin=20, smo
     import datamatrix.operations
     dm=datamatrix.convert.from_pandas(df).series
     return datamatrix.series.blinkreconstruct(dm,vt,vt_start,vt_end,maxdur,margin,smooth_winlen,std_thr,gap_margin,gap_vt,mode) #apply blinkreconstruct function from Mathot
+        
 
 def reconstruct(config: ProcessConfig, eye, col_in, col_out, window_size=100):
     '''
@@ -233,10 +234,14 @@ def reconstruct(config: ProcessConfig, eye, col_in, col_out, window_size=100):
         col_out:               Computed column after applying the function.
         window_size:           Number of data points used for interpolation.????
     '''
-    interpolated=eye[col_in].interpolate(method='linear')
-    eye[col_out] = blinkreconstruct(interpolated,
-                                    vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
-                                    mode='advanced')
+    try:
+        interpolated=eye[col_in].interpolate(method='linear')
+        eye[col_out] = blinkreconstruct(interpolated,
+                                        vt_start=10 / config.sfactor, vt_end=5 / config.sfactor, maxdur=800,
+                                        mode='advanced')
+        return True
+    except RecursionError as re: 
+        return re
 
     
 def interp_100(config:ProcessConfig, eye, col_in, col_interp, col_out, window_size=100):
@@ -468,7 +473,11 @@ def process(config:ProcessConfig,progress):
         df=pf.data.copy()
         
         # Call the reconstruct function to remove blinks, interpolate, and smooth the data
-        reconstruct(config,df,f"{config.column}",f"{config.column}_rec")
+        status=reconstruct(config,df,f"{config.column}",f"{config.column}_rec")
+        if isinstance(status,RecursionError): 
+            pf.remark="Recursion error in blinkreconstruct."
+            pf.valid=False
+            continue
         
          # Define the range for the column
         if config.column=="diameter":
