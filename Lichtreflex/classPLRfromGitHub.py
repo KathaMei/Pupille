@@ -11,6 +11,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from typing import Sequence
 
+def apply_ifnz(fun,array):
+    if len(array)==0: 
+        return None
+    return fun(array)
+
 class PLR:
     '''
     Class to handle data representing a pupil response to a flash of light.
@@ -44,7 +49,7 @@ class PLR:
         self.sample_rate = sample_rate
         self.onset_idx = onset_idx
         self.stim_duration = stim_duration
-
+        
     def velocity_profile(self) -> np.array:
         '''
         Return the velocity profile of the PLR. Assumes the samples are
@@ -168,8 +173,9 @@ class PLR:
         Return the maximum constriction velocity.
         '''
         vel = self.velocity_profile()
-        pidx = self.peak_constriction_idx()
-        return np.max(abs(vel[self.onset_idx : pidx]))
+        pidx = self.peak_constriction_idx()        
+        # return np.max(abs(vel[self.onset_idx : pidx])
+        return apply_ifnz(np.max,(abs(vel[self.onset_idx : pidx])))
 
     def max_constriction_acceleration(self) -> float:
         '''
@@ -177,7 +183,8 @@ class PLR:
         '''
         acc = self.acceleration_profile()
         pidx = self.peak_constriction_idx()
-        return np.max(abs(acc[self.onset_idx : pidx]))
+        # return np.max(abs(acc[self.onset_idx : pidx]))
+        return apply_ifnz(np.max,(abs(acc[self.onset_idx : pidx])))
 
     def constriction_time(self) -> float:
         '''

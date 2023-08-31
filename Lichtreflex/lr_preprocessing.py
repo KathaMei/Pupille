@@ -281,17 +281,10 @@ def process(config:ProcessConfig,progress=print):
     fig3 = plr3.plot(vel=True, acc=True, print_params=False)
     fig4 = plr4.plot(vel=True, acc=True, print_params=False)
     
-    params1 = plr1.parameters()
-    params1
-    
-    params2 = plr2.parameters()
-    params2
-    
-    params3 = plr3.parameters()
-    params3
-    
-    params4 = plr4.parameters()
-    params4
+    #params1 = plr1.parameters()    
+    #params2 = plr2.parameters()    
+    #params3 = plr3.parameters()    
+    #params4 = plr4.parameters()
 
     def get_pyplr_results(plr):
         '''
