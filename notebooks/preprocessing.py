@@ -476,6 +476,7 @@ def process(config:ProcessConfig,progress):
         status=reconstruct(config,df,f"{config.column}",f"{config.column}_rec")
         if isinstance(status,RecursionError): 
             pf.remark="Recursion error in blinkreconstruct."
+            pf.stage="Recursion error in blinkreconstruct."
             pf.valid=False
             continue
         

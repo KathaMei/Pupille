@@ -135,7 +135,7 @@ import pandas as pd
 from collections import defaultdict
 import os
 
-output_path = '/Users/Katharina/Desktop/Beispieldaten'
+output_path = '/Users/Katharina/Desktop/NeuPreprocessing'
 
 data_counts_by_combination_and_stage = defaultdict(dict)
 
@@ -152,6 +152,7 @@ for d in sys.argv[1:]:
         if stage not in data_counts_by_combination_and_stage[(eyenum, column)]:
             data_counts_by_combination_and_stage[(eyenum, column)][stage] = 0
         data_counts_by_combination_and_stage[(eyenum, column)][stage] += 1
+
 
 print("Data Counts by Eyenum and Column in Each Stage:")
 
