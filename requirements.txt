@@ -7,44 +7,44 @@ neurokit2==0.2.5
 fastnumbers==5.0.1
 datamatrix==1.0.4
 ipympl==0.9.3
-python==3.10.9
+# python==3.10.9
 
 ###############
 #notebooks
 
-smooth.py X
+#smooth.py X
 
-Mathot-Copy1.ipynb
-Mathot-Copy1.ipynb:    "!pip install pyplr\n",
-Mathot-Copy1.ipynb:    "!pip install neurokit2\n",
-Mathot-Copy1.ipynb:    "!pip install fastnumbers\n",
-Mathot-Copy1.ipynb:    "!pip install datamatrix\n",
-Mathot-Copy2.ipynb:    "!pip install pyplr\n",
-Mathot-Copy2.ipynb:    "!pip install neurokit2\n",
-Mathot-Copy2.ipynb:    "!pip install fastnumbers\n",
-Mathot-Copy2.ipynb:    "!pip install datamatrix\n",
+#Mathot-Copy1.ipynb
+#Mathot-Copy1.ipynb:    "!pip install pyplr\n",
+#Mathot-Copy1.ipynb:    "!pip install neurokit2\n",
+#Mathot-Copy1.ipynb:    "!pip install fastnumbers\n",
+#Mathot-Copy1.ipynb:    "!pip install datamatrix\n",
+#Mathot-Copy2.ipynb:    "!pip install pyplr\n",
+#Mathot-Copy2.ipynb:    "!pip install neurokit2\n",
+#Mathot-Copy2.ipynb:    "!pip install fastnumbers\n",
+#Mathot-Copy2.ipynb:    "!pip install datamatrix\n",
 
-Mathot.ipynb:    "!pip install pyplr\n",
-Mathot.ipynb:    "!pip install neurokit2\n",
-Mathot.ipynb:    "!pip install fastnumbers\n",
-Mathot.ipynb:    "!pip install datamatrix\n",
+#Mathot.ipynb:    "!pip install pyplr\n",
+#Mathot.ipynb:    "!pip install neurokit2\n",
+#Mathot.ipynb:    "!pip install fastnumbers\n",
+#Mathot.ipynb:    "!pip install datamatrix\n",
 
-checkdata.ipynb:    "!pip install pyplr\n",
-checkdata.ipynb:    "!pip install neurokit2\n",
-checkdata.ipynb:    "!pip install fastnumbers\n",
-checkdata.ipynb:    "!pip install datamatrix\n",
+#checkdata.ipynb:    "!pip install pyplr\n",
+#checkdata.ipynb:    "!pip install neurokit2\n",
+#checkdata.ipynb:    "!pip install fastnumbers\n",
+#checkdata.ipynb:    "!pip install datamatrix\n",
 
-PLR-Blinkreconstruct.ipynb:    "!pip install pyplr\n",
-PLR-Blinkreconstruct.ipynb:    "!pip install neurokit2\n",
-PLR-Blinkreconstruct.ipynb:    "!pip install fastnumbers\n",
-PLR-Blinkreconstruct.ipynb:    "!pip install datamatrix\n",
+#PLR-Blinkreconstruct.ipynb:    "!pip install pyplr\n",
+#PLR-Blinkreconstruct.ipynb:    "!pip install neurokit2\n",
+#PLR-Blinkreconstruct.ipynb:    "!pip install fastnumbers\n",
+#PLR-Blinkreconstruct.ipynb:    "!pip install datamatrix\n",
 
-PupilLightReflexScript.ipynb:    "!pip install pyplr\n",
-PupilLightReflexScript.ipynb:    "!pip install neurokit2\n",
-PupilLightReflexScript.ipynb:    "!pip install fastnumbers\n",
-PupilLightReflexScript.ipynb:    "!pip install datamatrix\n",
+#PupilLightReflexScript.ipynb:    "!pip install pyplr\n",
+#PupilLightReflexScript.ipynb:    "!pip install neurokit2\n",
+#PupilLightReflexScript.ipynb:    "!pip install fastnumbers\n",
+#PupilLightReflexScript.ipynb:    "!pip install datamatrix\n",
 
-checkdataPLR.ipynb:    "!pip install pyplr\n",
-checkdataPLR.ipynb:    "!pip install neurokit2\n",
-checkdataPLR.ipynb:    "!pip install fastnumbers\n",
-checkdataPLR.ipynb:    "!pip install datamatrix\n",
+#checkdataPLR.ipynb:    "!pip install pyplr\n",
+#checkdataPLR.ipynb:    "!pip install neurokit2\n",
+#checkdataPLR.ipynb:    "!pip install fastnumbers\n",
+#checkdataPLR.ipynb:    "!pip install datamatrix\n",

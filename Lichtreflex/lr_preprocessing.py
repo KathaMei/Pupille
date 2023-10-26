@@ -9,7 +9,7 @@ import os.path
 import shutil
 from datetime import datetime
 import math
-sys.path.append("../Pupillengröße/Skripte/")
+sys.path.append("../Skripte/")
 from dataclasses import dataclass
 from typing import List
 import pup_util

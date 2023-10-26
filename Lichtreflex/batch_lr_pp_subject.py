@@ -2,7 +2,7 @@
 import lr_preprocessing
 import sys
 print(sys.path)
-sys.path.append("../Pupillengröße/Skripte/")
+sys.path.append("../Skripte/")
 
 display=print
 def noprint(*x):
