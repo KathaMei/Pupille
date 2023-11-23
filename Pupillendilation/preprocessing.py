@@ -8,8 +8,6 @@ import os.path
 import shutil
 from datetime import datetime
 import math
-sys.path.append("../Skripte/")
-
 
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-

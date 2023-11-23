@@ -134,8 +134,9 @@ import preprocessing
 import pandas as pd
 from collections import defaultdict
 import os
+import pup_config
 
-output_path = '/Users/Katharina/Desktop/NeuPreprocessing'
+output_path = f'{pup_config.obj_dir}/NeuPreprocessing'
 
 data_counts_by_combination_and_stage = defaultdict(dict)
 

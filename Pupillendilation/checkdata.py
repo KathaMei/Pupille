@@ -113,8 +113,9 @@ def blinkreconstruct(df, vt=5, vt_start=10, vt_end=5, maxdur=500, margin=10, smo
 
 if __name__=="__main__": 
     import pandas as pd
+    import pup_config
     subject_id="PJ02_1_Ruhe"
     window_duration=30
-    data_dir="./Users/Katharina/Desktop/Beispieldaten/"
+    data_dir=pup_config.data_dir
     config=DataConfig(window_duration=30)
     prepare(data_dir,subject_id,0,config)

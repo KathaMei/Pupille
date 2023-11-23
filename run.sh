@@ -1,4 +1,5 @@
 #!/bin/sh
+export PYTHONPATH=$(pwd)/Skripte
 if [ ! -d venv ]
 then 
  python3 -m venv venv

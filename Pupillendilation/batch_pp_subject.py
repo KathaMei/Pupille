@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import preprocessing
 import sys
+import pup_config
 
 display=print
 def noprint(x):
@@ -22,7 +23,7 @@ def pps(fn, field,eye):
         fn=fn.rstrip("/")
         d,subject_id=os.path.split(fn)
         data_dir,_=os.path.split(d)
-        out_dir="/Users/Katharina/Desktop/NeuPreprocessing"
+        out_dir=f"{pup_config.obj_dir}/NeuPreprocessing"
         #out_dir="./"
         config=preprocessing.create_process_config(eye,field,subject_id,data_dir)
         res=preprocessing.process(config,noprint)    
