@@ -1,6 +1,4 @@
-**[Anleitung Github]{.underline}**
-
-**Einführung**
+# Einführung
 
 Die Skripte dieses GitHub-Repositorys dienen der Aufbereitung und
 Bereinigung von Pupillengrößen Daten, die mit dem Eye Trackern Pupil
@@ -13,54 +11,52 @@ berechnet werden die Daten während und nach der Vagusnervstimulation. In
 diesem Skript werden Daten von 3.4s sowie 30s langen
 Stimulationssequenzen sowie Verum- und Shamstimulationen prozessiert.
 
-**Voraussetzungen**
+# Voraussetzungen
 
--   Github Account erstellen
+Kurzfassung: 
 
--   Github Repository auf den Desktop klonen
+```console
+$ git clone https://github.com/KathaMei/Pupille.git
+$ cd Pupille
+$ ./run-jupyter.sh
+```
 
--   Jupiter Notebook installieren
+Das `run-jupyter.sh` Script initialisiert eine virtuelle Python Umgebung mit JupyterLab sowie allen benötigten Paketen aus `requirements.txt` und startet dann JupyerLab im Browser. 
 
--   Github Repository über Jupiter Notebook starten
+# [TODO] Wie kommt man an meine konkreten Messdaten? 
 
--   Installation folgender Bibliotheken:
+# Datenstruktur 
 
-    -   pandas == 2.0.3
+Die Skripte sind für die Datenstruktur des Pupil Core Eyetrackers (PCE) 
+erstellt worden. Falls dieser nicht benutzt wurde, sollte die
+Datendateien angepasst werden. Ein Stimulationsdurchgang für einen Probanden würde beispielsweise folgende Dateien produzieren:    
 
-    -   matplotlib==3.7.2
+```
+PJ10/PJ10_1_PLR1/
+PJ10/PJ10_1_PLR1/exports
+PJ10/PJ10_1_PLR1/exports/000
+PJ10/PJ10_1_PLR1/exports/000/pupil_gaze_positions_info.txt
+PJ10/PJ10_1_PLR1/exports/000/export_info.csv
+PJ10/PJ10_1_PLR1/exports/000/gaze_positions.csv
+PJ10/PJ10_1_PLR1/exports/000/pupil_positions.csv
+PJ10/PJ10_1_PLR1/exports/000/annotations.csv
+PJ10/PJ10_1_PLR1/annotation_timestamps.npy
+```
 
-    -   jupyterlab==4.0.3
+Hierbei is PJ10_1_PLR1 ein Bezeichner, der für den Probanden (PJ10) und den Durchlauf (1_PLR) steht. Die Dateien in diesem Ordner werden vom PCE generiert. Dabei werden folgende Dateien verwendet: 
 
-    -   datamatrix==1.0.4
+-   annotation_timestamps.npy: List mit Timestamps
+-   pupil_positions.csv: verwendete Spalten namens
+    pupil_timestamp (Zeit der Aufnahme), eye_id (Augenseite),
+    confidence (Genauigkeit der Messung), diameter (Durchmesser
+    der Pupille in 2D/Pixeln), diameter_3d (Durchmesser der
+    Pupille in 3D/mm)
 
-    -   pyplr==1.0.3
+Die Skripte in diesem Projekt erhalten der Ort der Eingangs und Ausgangsdaten aus der Konfigurationsdatei `Skripte/pup_config.py`. Dort können folgende Variablen gesetzt werden: 
 
-    -   neurokit2==0.2.5
-
-    -   fastnumbers==5.0.1
-
-    -   datamatrix==1.0.4
-
-    -   ipympl==0.9.3
-
-    -   python==3.10.9
-
-**Datenstruktur**
-
--   Die Skripte sind für die Datenstruktur des Pupil Core Eyetrackers
-    erstellt worden. Falls dieser nicht benutzt wurde, sollte die
-    Datendateien angepasst werden.
-
-    -   In den Datendateien sind folgende Dateien enthalten
-
-        -   Annotations.npy: Liste mit timestamps
-
-        -   Pupil_positions.csv: verwendete Spalten namens
-            pupil_timestamp (Zeit der Aufnahme), eye_id (Augenseite),
-            confidence (Genauigkeit der Messung), diameter (Durchmesser
-            der Pupille in 2D/Pixeln), diameter_3d (Durchmesser der
-            Pupille in 3D/mm)
-
+    `data_dir` - Ort an dem die Simulationsdurchläufe abgelegt wurden. 
+    `obj_dir`  - Ort an dem die Berechnungsergebnisse abgelegt werden sollen. 
+    
     -   Lichtreflex: In diesem Fall wurden vier verschiedene
         Lichtstärken dreimal hintereinander wiederholt. Dies ist für
         jeden Probanden pro Stimulationsdurchgang einmal erfolgt.
@@ -68,7 +64,7 @@ Stimulationssequenzen sowie Verum- und Shamstimulationen prozessiert.
     -   Pupillendilation: Pro Probanden wurden pro Stimulationsdurchgang
         eine Datendatei erstellt.
 
-**Vorbereitungen**
+# Vorbereitungen
 
 -   Datenbenennung überprüfen, die Skripte namens „for-all-data.sh,
     run-validata.sh" in Datei Pupillendilation und Lichtreflex
@@ -98,32 +94,33 @@ Stimulationssequenzen sowie Verum- und Shamstimulationen prozessiert.
 
 -   Ordner Skripte:
 
-    -   pup_config: Pfad zu den Datensätzen eingeben und Pfad, wo diese
+    -   `pup_config.py`: Pfad zu den Datensätzen eingeben und Pfad, wo diese
         gespeichert werden sollen
 
-    -   zuordnungen: csv Datei erstellen, bei denen die
+    -   `zuordnungen.csv`: csv Datei erstellen, bei denen die
         Pseudoanonymisierung der Daten entschlüsselt wird
+        [TODO] Erklärung, was die Zahlen bedeuten in der zuodnung.csv, z.B. `PJ01,2,3,1,4`
 
-**Anwendungen**
+# Anwendungen
 
--   Pupillendilation
+## Pupillendilation
 
     -   anpassen der Zeitdauer, mit der die Stimulationen durchgeführt
-        wurden im Skript preprocessing.py
+        wurden im Skript `preprocessing.py`
 
-    -   testen der Vorverarbeitung mithilfe des Notebooks smooth.ipynb
+    -   testen der Vorverarbeitung mithilfe des Notebooks `smooth.ipynb`
 
     -   Anpassung der Grenzwerte der Funktionen im Skript im
-        preprocessing.py
+        `preprocessing.py`
 
     -   Ausgabe der Anzahl an Datensätzen, die weiterhin valide waren
-        nach der Vorverarbeitung mittels validate_data.py und
-        counts_fails.py
+        nach der Vorverarbeitung mittels `validate_data.py` und
+        `counts_fails.py`
 
     -   Durchlauf und speichern der vorprozessierten Daten mithilfe des
         batch_pp_subject.py
 
--   Lichtreflex
+## Lichtreflex
 
     -   anpassen der Zeitdauer, mit der die Stimulationen durchgeführt
         wurden im Skript lr_preprocessing.py
@@ -137,7 +134,7 @@ Stimulationssequenzen sowie Verum- und Shamstimulationen prozessiert.
     -   Durchlauf und speichern der vorprozessierten Daten mithilfe des
         batch_lr_pp_subject.py
 
-**Dateien**
+# Dateien
 
 -   Pupillendilation: enthält Skripte zur Aufbereitung der
     Pupillendaten, Notebooks zum Testen der Funktionen sowie Skripte,
