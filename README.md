@@ -105,34 +105,34 @@ Die Skripte in diesem Projekt erhalten der Ort der Eingangs und Ausgangsdaten au
 
 ## Pupillendilation
 
-    -   anpassen der Zeitdauer, mit der die Stimulationen durchgeführt
-        wurden im Skript `preprocessing.py`
+-   anpassen der Zeitdauer, mit der die Stimulationen durchgeführt
+    wurden im Skript `preprocessing.py`
 
-    -   testen der Vorverarbeitung mithilfe des Notebooks `smooth.ipynb`
+-   testen der Vorverarbeitung mithilfe des Notebooks `smooth.ipynb`
 
-    -   Anpassung der Grenzwerte der Funktionen im Skript im
-        `preprocessing.py`
+-   Anpassung der Grenzwerte der Funktionen im Skript im
+    `preprocessing.py`
 
-    -   Ausgabe der Anzahl an Datensätzen, die weiterhin valide waren
-        nach der Vorverarbeitung mittels `validate_data.py` und
-        `counts_fails.py`
+-   Ausgabe der Anzahl an Datensätzen, die weiterhin valide waren
+    nach der Vorverarbeitung mittels `validate_data.py` und
+    `counts_fails.py`
 
-    -   Durchlauf und speichern der vorprozessierten Daten mithilfe des
-        batch_pp_subject.py
+-   Durchlauf und speichern der vorprozessierten Daten mithilfe des
+    batch_pp_subject.py
 
 ## Lichtreflex
 
-    -   anpassen der Zeitdauer, mit der die Stimulationen durchgeführt
-        wurden im Skript lr_preprocessing.py
+-   anpassen der Zeitdauer, mit der die Stimulationen durchgeführt
+    wurden im Skript lr_preprocessing.py
 
-    -   testen der Vorverarbeitung mithilfe des Notebooks
-        PLR-Blinkreconstruct.ipynb
+-   testen der Vorverarbeitung mithilfe des Notebooks
+    PLR-Blinkreconstruct.ipynb
 
-    -   Anpassung der Grenzwerte der Funktionen im Skript im
-        lr_preprocessing.py
+-   Anpassung der Grenzwerte der Funktionen im Skript im
+    lr_preprocessing.py
 
-    -   Durchlauf und speichern der vorprozessierten Daten mithilfe des
-        batch_lr_pp_subject.py
+-   Durchlauf und speichern der vorprozessierten Daten mithilfe des
+    batch_lr_pp_subject.py
 
 # Dateien
 
