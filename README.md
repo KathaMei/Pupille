@@ -24,6 +24,9 @@ $ ./run-jupyter.sh
 Das `run-jupyter.sh` Script initialisiert eine virtuelle Python Umgebung mit JupyterLab sowie allen benötigten Paketen aus `requirements.txt` und startet dann JupyerLab im Browser. 
 
 # [TODO] Wie kommt man an meine konkreten Messdaten? 
+Datenablage:
+
+`https://cloud.uol.de/s/kDQWeMb99riwwQf`
 
 # Datenstruktur 
 
@@ -66,45 +69,74 @@ Die Skripte in diesem Projekt erhalten der Ort der Eingangs und Ausgangsdaten au
 
 # Vorbereitungen
 
--   Datenbenennung überprüfen, die Skripte namens „for-all-data.sh,
-    run-validata.sh" in Datei Pupillendilation und Lichtreflex
-    entsprechend anpassen oder folgende Dateibenennung nutzen.
-
-    -   Lichtreflex
-
-        -   Order: PJXX
-
-        -   Datei: PJXX_X_PLR1, PJXX_X_PLR2, PJXX_X_PLR3
-
-    -   Pupillendilation:
-
-        -   Order: PJXX
-
-        -   Datei: PJXX_X_Ruhe
-
-    -   In dem Unterordnern wird annotations.npy und
-        exports/000/pupil_positions.csv verwendet
-
-        -   Annotations.npy: Liste mit timestamps
-
-        -   Pupil_positions.csv: verwendete Spalten namens
-            pupil_timestamp, eye_id, confidence, diameter, diameter_3d
-
-[Idee dafür Beispiele hochladen zum Nachvollziehen?]{.mark}
-
 -   Ordner Skripte:
 
     -   `pup_config.py`: Pfad zu den Datensätzen eingeben und Pfad, wo diese
         gespeichert werden sollen
 
-    -   `zuordnungen.csv`: csv Datei erstellen, bei denen die
-        Pseudoanonymisierung der Daten entschlüsselt wird
-        [TODO] Erklärung, was die Zahlen bedeuten in der zuodnung.csv, z.B. `PJ01,2,3,1,4`
+    -   `zuordnungen.csv`: csv Datei erstellen, bei denen die Pseudoanonymisierung der Daten entschlüsselt wird.
+            - Spalte 1 `proband`: Probanden-ID
+            - Spalte 2 bis 5 `proto1` - `proto4`: die Reihenfolge der Stimulationssequenzen. Dabei bezeichnet `proto1`den ersten Durchgang, `proto2`den zweiten, usw. Eingesetzt in die Spalten pro Probanden wird eine Zahl zwischen 1 und 4, die das Stimulationsprotokoll angibt. `1 = 3.4s Stimulation`, `2 = 3.4s Placebo`, `3 = 30s Stimulation`, `4 = 30s Placebo`
+       Hierbei bedeuten die Zahlen in der ersten Zeile des Skriptes von PJ01 2, 3, 1, 4, dass zuerst als Stimulationsprotokoll 3.4s Placebo, anschließend  30s Stimulation, dann eine 3.4s Stimulation und zuletzt eine 30s Placebo Messung durchgeführt wurden.
 
+ `	proband	proto1	proto2	proto3	proto4
+1	PJ01	2	    3	    1	    4
+2	PJ02	1	    2	    4	    3
+`
+  
+        
 # Anwendungen
 
 ## Pupillendilation
 
+- Mit dem Notebook namens `smooth.ipynb` können zuerst die Einstellungen des Hauptskripts `preprocessing.py`überprüft und die Schritte der Datenvorverarbeitung visualisiert werden. Die Probanden-ID, von der die Daten überprüft werden sollen, muss unter dem Punkt `Creation of variables` eingegeben werden. Ebenso sollte unter dem Namen `field` angegeben werden, ob sich der `diameter`oder `diameter_3d` angeschaut werden soll. 
+
+`subject_id="PJ21_4_Ruhe"
+field="diameter"
+ts="pupil_timestamp"
+data_dir=pup_config.data_dir`
+
+- Entsprechend kann auch die Augenseite, dessen Daten betrachtet werden sollen, umgestellt werden. `0 - rechts`, `1 - links`
+`config=preprocessing.create_process_config(0,field,subject_id,data_dir)`
+
+- Die Parameter und Grenzwerte sämtlicher Funktionen im Skript `preprocessing.py` können verstellt werden und anschließend in dem Notebook `smooth.ipynb`für einzelne Probandendurchläufe überprüft werden. Erklärungen zu den einzelnen Parametern und Funktionen sind im Skript selbst enthalten.
+  
+- Wenn die Einstellungen der Datenvorverarbeitung für sämtliche Probanden passend erscheint, kann für alle einzelnen Replikate, über das Skripte `validate_data.py` der `nan_score` abgebildet werden. Der `nan_score`gibt an, wie viele der Daten durch die Funktion `compute-and-reject-noise` ausgeschlossen und für die weitere Analyse nicht berücksicht werden.
+`
+ ./run-validate.sh /Users/Katharina/Desktop/Beispieldaten
+`
+- Anschließend können einzelne Datensätze im Notebook `smooth.ipynb` in ihrer Qualität beurteilt werden und der Grenzwert `noise-rejection-percent` so angepasst werden, dass die Datensätze mit dem nan-score über dem Grenzwert, also mit niedriger Qualität, rausfallen. Die Datensätze, die den Grenzwert nicht überschreiten durchlaufen die weiteren Vorverarbeitungsschritte.
+
+- Wenn die Einstellungen der Funktionen überprüft wurden, können die Ergebnisse aller Daten extrahiert werden. Dafür wird `batch_pp_subject.py`genutzt, worüber die Daten sowohl als `pickle`als auch als `csv`Datei extern gespeichert werden.
+`
+./for-all-data.sh ~/Desktop/Beispieldaten ./batch_pp_subject.py 
+`
+- Im letzten Schritt kann dann überprüft werden, in welchen Abschnitten der Datenvorverarbeitung wie viele Replikate unter den Grenzwerten lagen und somit für die weiteren Schritte entfernt wurden. Dafür wird das Skript `counts_fails.py` genutzt.
+`
+python3 /Users/Katharina/Desktop/Pupille/notebooks/count_fails.py /Users/Katharina/Desktop/Schreibtisch - MacBook Air/Forschungs- und Doktorarbeit Witt/Promotion/Datenauswertung/Pupillendilation/ErgebnissePreprocessing/*.pickle
+`
+Als Resultet erhält man zwei csv Dateien, die die Anzahl an Dateien pro Schritt angeben.
+`
+Eyenum	Column	    Stage	    Data Count
+0	    diameter	finished	2241
+0	    diameter	preprocess	180
+`
+
+In der csv-Datei gibt `eyenum` die Augenseite (links oder rechts), `column` die Daten (diameter oder daimater_3d), `data count` die Anzahl der Daten und `stage` den Schritt, den die Daten als letztes erreicht haben und anschließend ausgeschieden sind.
+
+
+## Lichtreflex
+
+- Mit dem Notebook namens `PLR-Blinkreconstruct.ipynb` können zuerst die Einstellungen des Hauptskripts `lr_preprocessing.py`überprüft und die Schritte der Datenvorverarbeitung visualisiert werden. Die Probanden-ID, von der die Daten überprüft werden sollen, muss unter dem Punkt `Check the application of the module checkdataPLR.py on specific subject data` oder `Check the application of the module checkdataPLR.py on specific subject data in a list` eingegeben werden.
+- Anschließend entweder die Variable `diameter`oder `diameter_3d`unter dem Punkt `Use datamatrix from pydatamatrix.eu to detect and reconstruct blinks for diameter. Use the list of subjects and create plots of the different preprocessing steps.` eingeben. Anschließend laden sich für alle Datensätze Grafiken, mit denen visuell die Anwendung der Vorverarbeitungsschritte überprüft werden können.
+- Datensätze, bei denen die Anwendung keine Besserung der Datenqualität erbracht hat und die invalide aufgrund von Messfehlern erscheinen, können so notiert und anschließend von den weiteren Analysen ausgeschlossen werden.
+-  Die Funktionen, mit denen die Lichtreflexparameter errechnet werden, sind im Skript `classPLRfromGithub.py` enthalten. Um die Ergebnisse für alle Datensätze in Form von csv-Dateien zu erhalten, wird das Skript `batch_lr_pp_subject.py` genutzt und so die Dateien extern abgespeichert. Es werden automatisch vier Dateien pro Datensatz erstellt: jeweils für die Kombinationen der beiden Augenseiten und `diameter`/ `diameter_3d`. 
+- `./for-all-data.sh ~/Desktop/Beispieldaten ./batch_lr_pp_subject.py`
+
+
+
+## Pupillendilation
+ 
 -   anpassen der Zeitdauer, mit der die Stimulationen durchgeführt
     wurden im Skript `preprocessing.py`
 
