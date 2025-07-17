@@ -23,8 +23,7 @@ $ ./run-jupyter.sh
 
 Das `run-jupyter.sh` Script initialisiert eine virtuelle Python Umgebung mit JupyterLab sowie allen benötigten Paketen aus `requirements.txt` und startet dann JupyerLab im Browser. 
 
-# [TODO] Wie kommt man an meine konkreten Messdaten? 
-Datenablage:
+# Datenablage 
 
 `https://cloud.uol.de/s/kDQWeMb99riwwQf`
 
