@@ -3,7 +3,7 @@
 Die Skripte dieses GitHub-Repositoryies dienen der Aufbereitung und
 Bereinigung von Pupillengrößendaten, die mit der Eyetracking Plattform Pupil
 Core der Firma Pupil Labs während der Anwendung der
-transkutanen aurikulären Vagusnervstimulation aufgenommen wurden.
+transkutanen aurikulären Vagusnervstimulation aufgenommen werden.
 
 Ein Schwerpunkt liegt auf der Aufbereitung von Pupillendaten und der
 Berechnung von Parametern des Pupillenlichtreflexes. Vorverarbeitet und
