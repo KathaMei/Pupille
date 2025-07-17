@@ -23,6 +23,7 @@ $ ./run-jupyter.sh
 
 Das `run-jupyter.sh` Skript initialisiert eine virtuelle Python-Umgebung mit JupyterLab sowie allen benötigten Paketen aus `requirements.txt` und startet dann JupyterLab im Browser. 
 
+
 # Datenablage 
 
 `https://cloud.uol.de/s/kDQWeMb99riwwQf`
@@ -54,17 +55,22 @@ Hierbei ist PJ10_1_PLR1 die Kennung, die für den Probanden (PJ10) und den Durch
     der Pupille in 2D/Pixeln), diameter_3d (Durchmesser der
     Pupille in 3D/mm)
 
-Die Skripte in diesem Projekt enthalten den Ort der Eingangs- und Ausgangsdaten aus der Konfigurationsdatei `Skripte/pup_config.py`. Es können folgende Variablen gesetzt werden: 
 
-    `data_dir` - Ort an dem die Simulationsdurchläufe abgelegt werden. 
-    `obj_dir`  - Ort an dem die Berechnungsergebnisse abgelegt werden. 
-    
-    -   Lichtreflex: In diesem Fall wurden vier verschiedene
-        Lichtstärken dreimal hintereinander wiederholt. Dies ist für
-        jeden Probanden pro Stimulationsdurchgang einmal erfolgt.
+In diesem Projekt sind insgesamt drei Ordner angelegt worden:
+-   Skripte: beinhaltet drei Dateien, die für das gesamte Projekt gelten. 
+Um die Eingangs- und Ausgangsdaten für alle Skripte zu konfigurieren, ist `Skripte/pup_config.py` erstellt worden. Dort können folgende Variablen gesetzt werden: 
 
-    -   Pupillendilation: Pro Proband wurde pro Stimulationsdurchgang
-        eine Datendatei erstellt.
+    `data_dir` - Ort, an dem die Stimulationsdurchläufe abgelegt werden. 
+    `obj_dir`  - Ort, an dem die Berechnungsergebnisse abgelegt werden. 
+
+In der Datei `pupil_util.py` wird beschrieben, wie die Dateien zu den unterschiedlichen Stimulationsdurchgängen zugeordnet werden und wie Daten abgespeichert werden.
+
+Das Skript `zuordnungen.csv` enthält die Zuordnung der pseudoanonymisierten Patientendaten zu den Stimulationsdurchgängen.
+
+-   Lichtreflex: In der Studie wurden vier verschiedene Lichtstärken dreimal hintereinander wiederholt. Dies ist für jeden Probanden pro Stimulationsdurchgang einmal erfolgt.
+
+-   Pupillendilation: Pro Probanden wurden pro Stimulationsdurchgang eine Datendatei erstellt.
+
 
 # Vorbereitungen
 
@@ -79,11 +85,31 @@ Die Skripte in diesem Projekt enthalten den Ort der Eingangs- und Ausgangsdaten 
        Beispielsweise bedeuten hierbei die Zahlen in der ersten Zeile des Skriptes von PJ01 2, 3, 1, 4, dass zuerst als Stimulationsprotokoll 3.4s Placebo, anschließend  30s Stimulation, dann eine 3.4s Stimulation und zuletzt eine 30s Placebo Messung durchgeführt wurden.
 
 
+
 | Proband | Kennung | Proto1 | Proto2 | Proto3 | Proto4 |
 |---------|---------|--------|--------|--------|--------|
 | 1       | PJ01    | 2      | 3      | 1      | 4      |
 | 2       | PJ02    | 1      | 2      | 4      | 3      |
   
+Die Zuordnungen der Stimulationsdurchgänge zu den Zahlen wird in `pup_util.py` definiert. Dies Zuordnungen können folgendermaßen überprüft werden: 
+
+```
+$ python3
+Python 3.10.12 (main, Nov 20 2023, 15:14:05) [GCC 11.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pup_util
+>>> pup_util.get_condition("PJ01_1")
+('3.4', '3.4Placebo')
+>>> pup_util.get_condition("PJ02_1")
+('3.4', '3.4Stim')
+>>> pup_util.get_condition("PJ02_2")
+('3.4', '3.4Placebo')
+>>> pup_util.get_condition("PJ02_3")
+('30', '30Placebo')
+>>> pup_util.get_condition("PJ02_4")
+('30', '30Stim')
+```
+
         
 # Anwendungen
 
@@ -91,12 +117,14 @@ Die Skripte in diesem Projekt enthalten den Ort der Eingangs- und Ausgangsdaten 
 
 - Mit dem Notebook namens `smooth.ipynb` können zuerst die Einstellungen des Hauptskripts `preprocessing.py` überprüft und die Schritte der Datenvorverarbeitung visualisiert werden. Die Probanden-ID, von der die Daten überprüft werden sollen, wird unter `Creation of variables` eingegeben. Ebenso wird unter dem Namen `field` angegeben, ob der `diameter` oder `diameter_3d` betrachtet werden soll. 
 
+
 `subject_id="PJ21_4_Ruhe"
 field="diameter"
 ts="pupil_timestamp"
 data_dir=pup_config.data_dir`
 
 - Ebenso kann auch die Augenseite, dessen Daten betrachtet werden sollen, umgestellt werden. `0 - rechts`, `1 - links`
+
 `config=preprocessing.create_process_config(0,field,subject_id,data_dir)`
 
 - Die Parameter und Grenzwerte sämtlicher Funktionen im Skript `preprocessing.py` können verstellt werden und anschließend in dem Notebook `smooth.ipynb` für einzelne Probandendurchläufe überprüft werden. Erklärungen zu den einzelnen Parametern und Funktionen sind im Skript selbst enthalten.
