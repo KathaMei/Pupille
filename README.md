@@ -31,7 +31,7 @@ Das `run-jupyter.sh` Skript initialisiert eine virtuelle Python-Umgebung mit Jup
 
 Die Skripte sind für die Datenstruktur der Eyetracking Plattform Pupil Core (EPPC) 
 erstellt worden. Falls diese nicht für die Datenerhebung verwendet wird, sollte die
-Datendateien angepasst werden. Ein Stimulationsdurchgang für einen Probanden würde beispielsweise folgende Dateien produzieren:    
+Datendateien angepasst werden. Ein Stimulationsdurchgang für einen Probanden produziert folgende Dateien:    
 
 ```
 PJ10/PJ10_1_PLR1/
@@ -71,7 +71,7 @@ Die Skripte in diesem Projekt enthalten den Ort der Eingangs- und Ausgangsdaten 
 -   Ordner Skripte:
 
     -   `pup_config.py`: Pfad zu den Datensätzen eingeben und Pfad, wo diese
-        gespeichert werden sollen
+        gespeichert werden sollen.
 
     -   `zuordnungen.csv`: csv-Datei erstellen, bei denen die Pseudoanonymisierung der Daten entschlüsselt wird.
             - Spalte 1 `proband`: Probanden-ID
