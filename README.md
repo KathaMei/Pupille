@@ -45,7 +45,7 @@ PJ10/PJ10_1_PLR1/exports/000/annotations.csv
 PJ10/PJ10_1_PLR1/annotation_timestamps.npy
 ```
 
-Hierbei is PJ10_1_PLR1 ein Bezeichner, der für den Probanden (PJ10) und den Durchlauf (1_PLR) steht. Die Dateien in diesem Ordner werden von der EPPC generiert. Dabei werden folgende Dateien verwendet: 
+Hierbei ist PJ10_1_PLR1 die Kennung, die für den Probanden (PJ10) und den Durchlauf (1_PLR) steht. Die Dateien in diesem Ordner werden von der EPPC generiert. Dabei werden folgende Dateien verwendet: 
 
 -   annotation_timestamps.npy: Liste mit timestamps
 -   pupil_positions.csv: verwendete Spalten namens
@@ -79,17 +79,10 @@ Die Skripte in diesem Projekt enthalten den Ort der Eingangs- und Ausgangsdaten 
        Beispielsweise bedeuten hierbei die Zahlen in der ersten Zeile des Skriptes von PJ01 2, 3, 1, 4, dass zuerst als Stimulationsprotokoll 3.4s Placebo, anschließend  30s Stimulation, dann eine 3.4s Stimulation und zuletzt eine 30s Placebo Messung durchgeführt wurden.
 
 `
-proband	proto1	proto2	proto3	proto4
----------------------------------------------
-1	PJ01	2	    3	    1	    4
-2	PJ02	1	    2	    4	    3
-
-
 | Proband | Kennung | Proto1 | Proto2 | Proto3 | Proto4 |
 |---------|---------|--------|--------|--------|--------|
 | 1       | PJ01    | 2      | 3      | 1      | 4      |
 | 2       | PJ02    | 1      | 2      | 4      | 3      |
-
 `
   
         
