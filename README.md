@@ -111,16 +111,18 @@ data_dir=pup_config.data_dir`
 `
 ./for-all-data.sh ~/Desktop/Beispieldaten ./batch_pp_subject.py 
 `
-- Im letzten Schritt kann dann überprüft werden, in welchen Abschnitten der Datenvorverarbeitung wie viele Replikate unter den Grenzwerten lagen und somit für die weiteren Schritte entfernt wurden. Dafür wird das Skript `counts_fails.py` genutzt.
+- Im letzten Schritt kann dann überprüft werden, in welchen Abschnitten der Datenvorverarbeitung wie viele Replikate unter den Grenzwerten lagen und somit für die weiteren Schritte entfernt worden sind. Dafür wird das Skript `counts_fails.py` genutzt.
 `
 python3 /Users/Katharina/Desktop/Pupille/notebooks/count_fails.py /Users/Katharina/Desktop/Schreibtisch - MacBook Air/Forschungs- und Doktorarbeit Witt/Promotion/Datenauswertung/Pupillendilation/ErgebnissePreprocessing/*.pickle
 `
-Als Resultet erhält man zwei csv-Dateien, welche die Anzahl an Dateien pro Schritt angeben.
-`
-Eyenum	Column	    Stage	    Data Count
-0	    diameter	finished	2241
-0	    diameter	preprocess	180
-`
+Als Resultat erhält man zwei csv-Dateien, welche die Anzahl an Dateien pro Schritt angeben.
+Beispielhaft wird folgende Tabelle dargestellt:
+
+| Eyenum | Column   | Stage      | Data Count |
+|--------|----------|------------|------------|
+| 0      | diameter | finished   | 2241       |
+| 0      | diameter | preprocess | 180        |
+
 
 In der csv-Datei gibt `eyenum` die Augenseite (links oder rechts), `column` die Daten (diameter oder daimater_3d), `data count` die Anzahl der Daten und `stage` den Schritt, den die Daten als Letztes erreicht haben und anschließend ausgeschieden sind.
 
